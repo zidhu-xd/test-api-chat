@@ -10,10 +10,10 @@ export const Colors = {
     tabIconDefault: "#687076",
     tabIconSelected: tintColorLight,
     link: "#007AFF",
-    backgroundRoot: "#FFFFFF", // Elevation 0
-    backgroundDefault: "#F2F2F2", // Elevation 1
-    backgroundSecondary: "#E6E6E6", // Elevation 2
-    backgroundTertiary: "#D9D9D9", // Elevation 3
+    backgroundRoot: "#FFFFFF",
+    backgroundDefault: "#F2F2F2",
+    backgroundSecondary: "#E6E6E6",
+    backgroundTertiary: "#D9D9D9",
   },
   dark: {
     text: "#ECEDEE",
@@ -21,11 +21,34 @@ export const Colors = {
     tabIconDefault: "#9BA1A6",
     tabIconSelected: tintColorDark,
     link: "#0A84FF",
-    backgroundRoot: "#1F2123", // Elevation 0
-    backgroundDefault: "#2A2C2E", // Elevation 1
-    backgroundSecondary: "#353739", // Elevation 2
-    backgroundTertiary: "#404244", // Elevation 3
+    backgroundRoot: "#1F2123",
+    backgroundDefault: "#2A2C2E",
+    backgroundSecondary: "#353739",
+    backgroundTertiary: "#404244",
   },
+};
+
+export const CalculatorColors = {
+  displayBackground: "#F5F5F5",
+  buttonBackground: "#FFFFFF",
+  operatorAccent: "#FF9500",
+  textPrimary: "#000000",
+  textSecondary: "#8E8E93",
+  numberButton: "#FFFFFF",
+  functionButton: "#E0E0E0",
+};
+
+export const ChatColors = {
+  senderBubble: "#8B5A3C",
+  receiverBubble: "#3A3A3A",
+  backgroundGradientStart: "#F0F0F0",
+  backgroundGradientEnd: "#FFFFFF",
+  surface: "#FFFFFF",
+  textOnBubbles: "#FFFFFF",
+  textSecondary: "#8E8E93",
+  readReceiptBlue: "#0084FF",
+  errorRed: "#FF3B30",
+  tickGray: "#8E8E93",
 };
 
 export const Spacing = {
@@ -89,17 +112,34 @@ export const Typography = {
     lineHeight: 24,
     fontWeight: "400" as const,
   },
+  calculatorResult: {
+    fontSize: 48,
+    lineHeight: 56,
+    fontWeight: "700" as const,
+  },
+  calculatorPreview: {
+    fontSize: 20,
+    lineHeight: 28,
+    fontWeight: "400" as const,
+  },
+  pairingCode: {
+    fontSize: 48,
+    lineHeight: 56,
+    fontWeight: "700" as const,
+    letterSpacing: 8,
+    fontFamily: Platform.select({
+      ios: "Menlo",
+      android: "monospace",
+      default: "monospace",
+    }),
+  },
 };
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: "system-ui",
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: "ui-serif",
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: "ui-rounded",
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: "ui-monospace",
   },
   default: {
