@@ -7,35 +7,34 @@
     "icon": "./assets/images/icon.png",
     "scheme": "calculator",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
+
+    "jsEngine": "hermes",
+    "newArchEnabled": false,
+
     "notification": {
       "icon": "./assets/images/notification-icon.png",
       "color": "#4F8BFF",
       "sounds": []
     },
+
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.calculator.app",
+      "bundleIdentifier": "com.calxd.ios",
       "infoPlist": {
-        "NSLocalNetworkUsageDescription": "This app requires local network access",
-        "NSBonjourServices": ["_http._tcp"],
         "NSUserTrackingUsageDescription": "This app does not track you"
       }
     },
+
     "android": {
+      "package": "com.calxd.android",
+      "googleServicesFile": "./google-services.json",
+      "enableProguardInReleaseBuilds": true,
       "adaptiveIcon": {
         "backgroundColor": "#0B0D10",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
-      },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.calculator.app",
-      "googleServicesFile": "./google-services.json"
+      }
     },
-    "web": {
-      "output": "single",
-      "favicon": "./assets/images/favicon.png"
-    },
+
     "plugins": [
       [
         "expo-splash-screen",
@@ -46,7 +45,6 @@
           "backgroundColor": "#0B0D10"
         }
       ],
-      "expo-web-browser",
       "expo-secure-store",
       [
         "expo-notifications",
@@ -56,8 +54,15 @@
         }
       ]
     ],
-    "experiments": {
-      "reactCompiler": true
+
+    "assetBundlePatterns": [
+      "assets/**"
+    ],
+
+    "extra": {
+      "eas": {
+        "projectId": "76094d55-e4ce-4e96-a3ac-7a242c34c119"
+      }
     }
   }
 }
