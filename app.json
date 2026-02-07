@@ -1,1 +1,51 @@
-{ "expo": { "name": "Calculator", "slug": "calculator", "version": "1.0.0", "orientation": "portrait", "icon": "./assets/images/icon.png", "scheme": "calculator", "userInterfaceStyle": "dark", "newArchEnabled": true, "notification": { "icon": "./assets/images/notification-icon.png", "color": "#4F8BFF", "sounds": [] }, "ios": { "supportsTablet": true, "bundleIdentifier": "com.calxd.android", "infoPlist": { "NSLocalNetworkUsageDescription": "This app requires local network access", "NSBonjourServices": [ "_http._tcp" ], "NSUserTrackingUsageDescription": "This app does not track you" } }, "android": { "adaptiveIcon": { "backgroundColor": "#0B0D10", "foregroundImage": "./assets/images/android-icon-foreground.png" }, "edgeToEdgeEnabled": true, "predictiveBackGestureEnabled": false, "package": "com.calculator.app", "googleServicesFile": "./google-services.json" }, "web": { "output": "single", "favicon": "./assets/images/favicon.png" }, "plugins": [ [ "expo-splash-screen", { "image": "./assets/images/splash-icon.png", "imageWidth": 200, "resizeMode": "contain", "backgroundColor": "#0B0D10" } ], "expo-web-browser", "expo-secure-store", [ "expo-notifications", { "icon": "./assets/images/notification-icon.png", "color": "#4F8BFF" } ] ], "experiments": { "reactCompiler": true }, "extra": { "eas": { "projectId": "76094d55-e4ce-4e96-a3ac-7a242c34c119" } } } }
+{
+  "expo": {
+    "name": "Calculator",
+    "slug": "calculator",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "calculator",
+    "userInterfaceStyle": "dark",
+
+    "jsEngine": "hermes",
+    "newArchEnabled": false,
+
+    "notification": {
+      "color": "#4F8BFF"
+    },
+
+    "android": {
+      "package": "com.calculator.app",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0D10",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
+      }
+    },
+
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0B0D10"
+        }
+      ],
+      "expo-secure-store",
+      "expo-notifications"
+    ],
+
+    "assetBundlePatterns": [
+      "assets/**"
+    ],
+
+    "extra": {
+      "eas": {
+        "projectId": "76094d55-e4ce-4e96-a3ac-7a242c34c119"
+      }
+    }
+  }
+}
