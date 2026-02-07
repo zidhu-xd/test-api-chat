@@ -10,6 +10,7 @@ const UNLOCK_USED_KEY = "unlock_used";
 const PASSCODE_KEY = "calculator_passcode";
 const THEME_KEY = "app_theme";
 const SELECTED_ICON_KEY = "selected_app_icon";
+const FCM_TOKEN_KEY = "fcm_device_token";
 const DEFAULT_PASSCODE = "1234";
 const DEFAULT_ICON = "calculator";
 
@@ -147,5 +148,28 @@ export async function clearAllData(): Promise<void> {
   await AsyncStorage.clear();
   try {
     await SecureStore.deleteItemAsync(DEVICE_ID_KEY);
+  } catch {}
+}
+
+/**
+ * FCM Token management for Firebase Cloud Messaging
+ */
+export async function getFCMToken(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(FCM_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export async function setFCMToken(token: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(FCM_TOKEN_KEY, token);
+  } catch {}
+}
+
+export async function clearFCMToken(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(FCM_TOKEN_KEY);
   } catch {}
 }
