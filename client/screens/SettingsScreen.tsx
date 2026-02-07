@@ -3,15 +3,24 @@ import { View, Text, StyleSheet, Pressable, Switch, Platform, ScrollView } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { Spacing, BorderRadius, ChatColors } from '@/constants/theme';
-import { getPasscode, setPasscode, clearAllData } from '@/lib/storage';
+import { getPasscode, setPasscode, clearAllData, getTheme, setTheme } from '@/lib/storage';
 
 export default function SettingsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [currentPasscode, setCurrentPasscode] = useState('1234');
+  const [theme, setAppTheme] = useState('system');
 
   React.useEffect(() => {
-    getPasscode().then(setCurrentPasscode);
+    Promise.all([getPasscode(), getTheme()]).then(([p, t]) => {
+      setCurrentPasscode(p);
+      setAppTheme(t);
+    });
   }, []);
+
+  const handleThemeChange = async (newTheme: string) => {
+    setAppTheme(newTheme);
+    await setTheme(newTheme);
+  };
 
   const handleUnpair = async () => {
     await clearAllData();
@@ -60,6 +69,22 @@ export default function SettingsScreen({ navigation }: any) {
             <Text style={styles.itemValue}>Default</Text>
           </View>
         </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>THEME</Text>
+          <View style={styles.themeContainer}>
+            {['light', 'dark', 'system'].map((t) => (
+              <Pressable
+                key={t}
+                style={[styles.themeOption, theme === t && styles.themeOptionActive]}
+                onPress={() => handleThemeChange(t)}
+              >
+                <Text style={[styles.themeText, theme === t && styles.themeTextActive]}>
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -98,4 +123,29 @@ const styles = StyleSheet.create({
   },
   itemLabel: { fontSize: 16, color: '#000' },
   itemValue: { fontSize: 14, color: '#8E8E93' },
+  themeContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF',
+    padding: Spacing.md,
+    justifyContent: 'space-around',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E0E0E0',
+  },
+  themeOption: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#F2F2F7',
+  },
+  themeOptionActive: {
+    backgroundColor: '#007AFF',
+  },
+  themeText: {
+    fontSize: 14,
+    color: '#000',
+  },
+  themeTextActive: {
+    color: '#FFF',
+  },
 });
