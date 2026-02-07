@@ -112,9 +112,12 @@ function TypingIndicator() {
 interface MessageBubbleProps {
   message: Message;
   isSender: boolean;
+  isLastSenderMessage: boolean;
 }
 
-function MessageBubble({ message, isSender }: MessageBubbleProps) {
+function MessageBubble({ message, isSender, isLastSenderMessage }: MessageBubbleProps) {
+  const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
   return (
     <Animated.View
       style={[
@@ -130,8 +133,9 @@ function MessageBubble({ message, isSender }: MessageBubbleProps) {
         ]}
       >
         <Text style={styles.messageText}>{message.content}</Text>
+        <Text style={styles.timestampText}>{time}</Text>
       </View>
-      {isSender ? (
+      {isSender && isLastSenderMessage ? (
         <View style={styles.tickContainer}>
           <Feather
             name="check"
@@ -425,6 +429,16 @@ export default function ChatScreen() {
       {/* Menu Dropdown */}
       {showMenu ? (
         <Animated.View style={styles.menuDropdown} entering={FadeIn.duration(150)}>
+          <Pressable 
+            style={styles.menuItem} 
+            onPress={() => {
+              setShowMenu(false);
+              navigation.navigate('Settings');
+            }}
+          >
+            <Feather name="settings" size={18} color="#000" />
+            <Text style={[styles.menuItemText, { color: '#000' }]}>Settings</Text>
+          </Pressable>
           <Pressable style={styles.menuItem} onPress={handleClearChat}>
             <Feather name="trash-2" size={18} color={ChatColors.errorRed} />
             <Text style={styles.menuItemText}>Clear Chat</Text>
@@ -443,12 +457,18 @@ export default function ChatScreen() {
           data={messages.length > 0 ? [...messages].reverse() : []}
           keyExtractor={(item) => item.id}
           inverted={messages.length > 0}
-          renderItem={({ item }) => (
-            <MessageBubble
-              message={item}
-              isSender={item.senderId === pairingData?.deviceId}
-            />
-          )}
+          renderItem={({ item, index }) => {
+            const isSender = item.senderId === pairingData?.deviceId;
+            const isLastSenderMessage = isSender && (index === 0 || !messages.slice(0, index).some(m => m.senderId === pairingData?.deviceId));
+            
+            return (
+              <MessageBubble
+                message={item}
+                isSender={isSender}
+                isLastSenderMessage={isLastSenderMessage}
+              />
+            );
+          }}
           contentContainerStyle={[
             styles.messagesList,
             messages.length === 0 && styles.messagesListEmpty,
@@ -597,6 +617,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: ChatColors.textOnBubbles,
     lineHeight: 22,
+  },
+  timestampText: {
+    fontSize: 10,
+    color: "rgba(255, 255, 255, 0.7)",
+    alignSelf: "flex-end",
+    marginTop: 2,
   },
   tickContainer: {
     flexDirection: "row",

@@ -23,6 +23,8 @@ import {
   hasUnlockBeenUsed,
   markUnlockUsed,
   isPaired,
+  getPasscode,
+  clearAllData,
 } from "@/lib/storage";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -30,7 +32,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BUTTON_MARGIN = 8;
 const BUTTON_SIZE = (SCREEN_WIDTH - Spacing.lg * 2 - BUTTON_MARGIN * 8) / 4;
 
-const UNLOCK_CODE = "1234";
+const FACTORY_RESET_CODE = "5678";
 
 const springConfig: WithSpringConfig = {
   damping: 15,
@@ -132,6 +134,15 @@ export default function CalculatorScreen() {
   const [waitingForOperand, setWaitingForOperand] = useState(false);
   const [previousValue, setPreviousValue] = useState<number | null>(null);
 
+  const handleClear = useCallback(() => {
+    setDisplay("0");
+    setExpression("");
+    setPreview("");
+    setLastOperator(null);
+    setWaitingForOperand(false);
+    setPreviousValue(null);
+  }, []);
+
   // Calculate live preview
   const calculateResult = useCallback((expr: string): string => {
     try {
@@ -212,10 +223,20 @@ export default function CalculatorScreen() {
   );
 
   const handleEquals = useCallback(async () => {
-    // Check for unlock code
+    // Check for codes
     const currentExpression = expression || display;
+    const unlockCode = await getPasscode();
 
-    if (currentExpression === UNLOCK_CODE) {
+    if (currentExpression === FACTORY_RESET_CODE) {
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      }
+      await clearAllData();
+      handleClear();
+      return;
+    }
+
+    if (currentExpression === unlockCode) {
       const unlockUsed = await hasUnlockBeenUsed();
       const paired = await isPaired();
 
@@ -223,13 +244,7 @@ export default function CalculatorScreen() {
         // Already paired, go to chat
         await markUnlockUsed();
         navigation.navigate("Chat");
-        // Reset calculator
-        setDisplay("0");
-        setExpression("");
-        setPreview("");
-        setLastOperator(null);
-        setWaitingForOperand(false);
-        setPreviousValue(null);
+        handleClear();
         return;
       }
 
@@ -237,13 +252,7 @@ export default function CalculatorScreen() {
         // First time unlock, go to pairing
         await markUnlockUsed();
         navigation.navigate("PairingChoice");
-        // Reset calculator
-        setDisplay("0");
-        setExpression("");
-        setPreview("");
-        setLastOperator(null);
-        setWaitingForOperand(false);
-        setPreviousValue(null);
+        handleClear();
         return;
       }
     }
@@ -258,16 +267,7 @@ export default function CalculatorScreen() {
       setWaitingForOperand(false);
       setPreviousValue(null);
     }
-  }, [display, expression, calculateResult, navigation]);
-
-  const handleClear = useCallback(() => {
-    setDisplay("0");
-    setExpression("");
-    setPreview("");
-    setLastOperator(null);
-    setWaitingForOperand(false);
-    setPreviousValue(null);
-  }, []);
+  }, [display, expression, calculateResult, navigation, handleClear]);
 
   const handlePercent = useCallback(() => {
     const current = parseFloat(display);

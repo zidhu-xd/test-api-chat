@@ -6,6 +6,23 @@ import { Platform } from "react-native";
 const PAIRING_KEY = "pairing_data";
 const DEVICE_ID_KEY = "device_id";
 const UNLOCK_USED_KEY = "unlock_used";
+const PASSCODE_KEY = "calculator_passcode";
+const DEFAULT_PASSCODE = "1234";
+
+export async function getPasscode(): Promise<string> {
+  try {
+    const stored = await SecureStore.getItemAsync(PASSCODE_KEY);
+    return stored || DEFAULT_PASSCODE;
+  } catch {
+    return DEFAULT_PASSCODE;
+  }
+}
+
+export async function setPasscode(passcode: string): Promise<void> {
+  try {
+    await SecureStore.setItemAsync(PASSCODE_KEY, passcode);
+  } catch {}
+}
 
 export interface PairingData {
   pairId: string;

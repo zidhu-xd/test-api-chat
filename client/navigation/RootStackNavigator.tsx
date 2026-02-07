@@ -6,6 +6,7 @@ import PairingChoiceScreen from "@/screens/PairingChoiceScreen";
 import CodeDisplayScreen from "@/screens/CodeDisplayScreen";
 import CodeEntryScreen from "@/screens/CodeEntryScreen";
 import ChatScreen from "@/screens/ChatScreen";
+import SettingsScreen from "@/screens/SettingsScreen";
 
 export type RootStackParamList = {
   Calculator: undefined;
@@ -13,6 +14,7 @@ export type RootStackParamList = {
   CodeDisplay: undefined;
   CodeEntry: undefined;
   Chat: undefined;
+  Settings: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -54,6 +56,13 @@ export default function RootStackNavigator() {
         component={ChatScreen}
         options={{
           animation: "fade",
+        }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          animation: "slide_from_right",
         }}
       />
     </Stack.Navigator>
