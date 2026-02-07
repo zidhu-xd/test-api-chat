@@ -6,20 +6,31 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "calculator",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "notification": {
+      "icon": "./assets/images/notification-icon.png",
+      "color": "#4F8BFF",
+      "sounds": []
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.calculator.app"
+      "bundleIdentifier": "com.calculator.app",
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "This app requires local network access",
+        "NSBonjourServices": ["_http._tcp"],
+        "NSUserTrackingUsageDescription": "This app does not track you"
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#F5F5F5",
+        "backgroundColor": "#0B0D10",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.calculator.app"
+      "package": "com.calculator.app",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "single",
@@ -32,11 +43,18 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#F5F5F5"
+          "backgroundColor": "#0B0D10"
         }
       ],
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#4F8BFF"
+        }
+      ]
     ],
     "experiments": {
       "reactCompiler": true

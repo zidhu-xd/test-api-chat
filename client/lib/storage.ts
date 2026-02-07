@@ -49,6 +49,38 @@ export async function setTheme(theme: string): Promise<void> {
   } catch {}
 }
 
+export async function getThemeColors(): Promise<{
+  isDark: boolean;
+  background: string;
+  primary: string;
+  accent: string;
+}> {
+  try {
+    const stored = await AsyncStorage.getItem(THEME_COLORS_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch {}
+  // Default dark theme
+  return {
+    isDark: true,
+    background: "#0B0D10",
+    primary: "#FFFFFF",
+    accent: "#4F8BFF",
+  };
+}
+
+export async function setThemeColors(colors: {
+  isDark: boolean;
+  background: string;
+  primary: string;
+  accent: string;
+}): Promise<void> {
+  try {
+    await AsyncStorage.setItem(THEME_COLORS_KEY, JSON.stringify(colors));
+  } catch {}
+}
+
 export async function getDeviceId(): Promise<string> {
   try {
     const stored = await SecureStore.getItemAsync(DEVICE_ID_KEY);
