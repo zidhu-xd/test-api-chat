@@ -150,3 +150,15 @@ export async function resetDevice(
     body: JSON.stringify({ deviceId }),
   });
 }
+
+// Register FCM token for push notifications
+export async function registerFCMToken(
+  deviceId: string,
+  pairId: string,
+  fcmToken: string
+): Promise<ApiResponse<{ success: boolean }>> {
+  return apiCall("/api/fcm/register", {
+    method: "POST",
+    body: JSON.stringify({ deviceId, pairId, fcmToken }),
+  });
+}
