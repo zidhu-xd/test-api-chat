@@ -408,6 +408,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  // Device Reset - Unpair and delete all device data
+  app.post("/api/device/reset", (req: Request, res: Response) => {
+    const { deviceId } = req.body;
+
+    if (!deviceId) {
+      return res.status(400).json({ error: "Device ID required" });
+    }
+
+    // Find and delete any pairs involving this device
+    for (const [pairId, pair] of pairs.entries()) {
+      if (pair.device1Id === deviceId || pair.device2Id === deviceId) {
+        pairs.delete(pairId);
+        messages.delete(pairId);
+        typingIndicators.delete(pairId);
+        console.log(`[RESET] Deleted pair ${pairId.substring(0, 8)}... for device ${deviceId.substring(0, 8)}...`);
+      }
+    }
+
+    // Remove any pending codes for this device
+    for (const [code, pendingCode] of pendingCodes.entries()) {
+      if (pendingCode.deviceId === deviceId) {
+        pendingCodes.delete(code);
+        console.log(`[RESET] Deleted pending code for device ${deviceId.substring(0, 8)}...`);
+      }
+    }
+
+    console.log(`[RESET] Device completely reset: ${deviceId.substring(0, 8)}...`);
+
+    res.json({ success: true, message: "Device reset successfully" });
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

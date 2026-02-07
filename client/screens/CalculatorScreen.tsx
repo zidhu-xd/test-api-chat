@@ -18,14 +18,16 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
-import { CalculatorColors, Spacing } from "@/constants/theme";
+import { CalculatorColors, Spacing, BorderRadius } from "@/constants/theme";
 import {
   hasUnlockBeenUsed,
   markUnlockUsed,
   isPaired,
   getPasscode,
-  clearAllData,
+  fullDeviceReset,
+  getDeviceId,
 } from "@/lib/storage";
+import { resetDevice } from "@/lib/api";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -228,11 +230,26 @@ export default function CalculatorScreen() {
     const unlockCode = await getPasscode();
 
     if (currentExpression === FACTORY_RESET_CODE) {
+      // FULL DEVICE RESET - clear all data locally and on server
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       }
-      await clearAllData();
+      
+      try {
+        const deviceId = await getDeviceId();
+        // Reset server-side pairing
+        await resetDevice(deviceId);
+      } catch {
+        console.log("[v0] Server reset failed, but continuing with local reset");
+      }
+      
+      // Reset all local data and generate new device ID
+      await fullDeviceReset();
       handleClear();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Calculator" }],
+      });
       return;
     }
 
@@ -446,16 +463,18 @@ const styles = StyleSheet.create({
     color: CalculatorColors.textSecondary,
     textAlign: "right",
     marginBottom: Spacing.xs,
+    fontWeight: "600",
   },
   livePreviewText: {
     fontSize: 24,
     color: CalculatorColors.textSecondary,
     textAlign: "right",
     marginBottom: Spacing.sm,
+    fontWeight: "600",
   },
   resultText: {
     fontSize: 56,
-    fontWeight: "300",
+    fontWeight: "700",
     color: CalculatorColors.textPrimary,
     textAlign: "right",
   },
@@ -470,18 +489,13 @@ const styles = StyleSheet.create({
   },
   button: {
     height: BUTTON_SIZE,
-    borderRadius: BUTTON_SIZE / 2,
+    borderRadius: BorderRadius.md,
     justifyContent: "center",
     alignItems: "center",
     marginHorizontal: BUTTON_MARGIN / 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   buttonText: {
     fontSize: 28,
-    fontWeight: "400",
+    fontWeight: "700",
   },
 });

@@ -9,7 +9,9 @@ const DEVICE_ID_KEY = "device_id";
 const UNLOCK_USED_KEY = "unlock_used";
 const PASSCODE_KEY = "calculator_passcode";
 const THEME_KEY = "app_theme";
+const SELECTED_ICON_KEY = "selected_app_icon";
 const DEFAULT_PASSCODE = "1234";
+const DEFAULT_ICON = "calculator";
 
 export interface PairingData {
   pairId: string;
@@ -81,7 +83,37 @@ export async function isPaired(): Promise<boolean> {
   return (await getPairingData()) !== null;
 }
 
+export async function getSelectedIcon(): Promise<string> {
+  try {
+    return await AsyncStorage.getItem(SELECTED_ICON_KEY) || DEFAULT_ICON;
+  } catch {
+    return DEFAULT_ICON;
+  }
+}
+
+export async function setSelectedIcon(icon: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(SELECTED_ICON_KEY, icon);
+  } catch {}
+}
+
+export async function fullDeviceReset(): Promise<void> {
+  // Clear all AsyncStorage data
+  await AsyncStorage.clear();
+  // Delete device ID from secure store
+  try {
+    await SecureStore.deleteItemAsync(DEVICE_ID_KEY);
+  } catch {}
+  // Generate a NEW device ID for fresh start
+  const newDeviceId = Crypto.randomUUID();
+  try {
+    await SecureStore.setItemAsync(DEVICE_ID_KEY, newDeviceId);
+  } catch {}
+}
+
 export async function clearAllData(): Promise<void> {
   await AsyncStorage.clear();
-  await SecureStore.deleteItemAsync(DEVICE_ID_KEY);
+  try {
+    await SecureStore.deleteItemAsync(DEVICE_ID_KEY);
+  } catch {}
 }
