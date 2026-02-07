@@ -139,3 +139,13 @@ export async function checkPairingStatus(
     `/api/pair/status?deviceId=${encodeURIComponent(deviceId)}&code=${encodeURIComponent(code)}`
   );
 }
+
+// Reset device (unpair from server)
+export async function resetDevice(
+  deviceId: string
+): Promise<ApiResponse<{ message: string }>> {
+  return apiCall("/api/device/reset", {
+    method: "POST",
+    body: JSON.stringify({ deviceId }),
+  });
+}

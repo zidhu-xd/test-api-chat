@@ -1,54 +1,58 @@
 import { Platform } from "react-native";
 
-const tintColorLight = "#007AFF";
-const tintColorDark = "#0A84FF";
+// NEW: Minimal + Bold Contrast Design System
+const BACKGROUND = "#0B0D10";
+const PRIMARY_TEXT = "#FFFFFF";
+const SECONDARY_TEXT = "#9AA0A6";
+const ACCENT = "#4F8BFF";
+const DANGER = "#FF4D4F";
 
 export const Colors = {
   light: {
-    text: "#11181C",
-    buttonText: "#FFFFFF",
-    tabIconDefault: "#687076",
-    tabIconSelected: tintColorLight,
-    link: "#007AFF",
-    backgroundRoot: "#FFFFFF",
-    backgroundDefault: "#F2F2F2",
-    backgroundSecondary: "#E6E6E6",
-    backgroundTertiary: "#D9D9D9",
+    text: PRIMARY_TEXT,
+    buttonText: PRIMARY_TEXT,
+    tabIconDefault: SECONDARY_TEXT,
+    tabIconSelected: ACCENT,
+    link: ACCENT,
+    backgroundRoot: BACKGROUND,
+    backgroundDefault: "#161B22",
+    backgroundSecondary: "#1C2128",
+    backgroundTertiary: "#262D33",
   },
   dark: {
-    text: "#ECEDEE",
-    buttonText: "#FFFFFF",
-    tabIconDefault: "#9BA1A6",
-    tabIconSelected: tintColorDark,
-    link: "#0A84FF",
-    backgroundRoot: "#1F2123",
-    backgroundDefault: "#2A2C2E",
-    backgroundSecondary: "#353739",
-    backgroundTertiary: "#404244",
+    text: PRIMARY_TEXT,
+    buttonText: PRIMARY_TEXT,
+    tabIconDefault: SECONDARY_TEXT,
+    tabIconSelected: ACCENT,
+    link: ACCENT,
+    backgroundRoot: BACKGROUND,
+    backgroundDefault: "#161B22",
+    backgroundSecondary: "#1C2128",
+    backgroundTertiary: "#262D33",
   },
 };
 
 export const CalculatorColors = {
-  displayBackground: "#F5F5F5",
-  buttonBackground: "#FFFFFF",
-  operatorAccent: "#FF9500",
-  textPrimary: "#000000",
-  textSecondary: "#8E8E93",
-  numberButton: "#FFFFFF",
-  functionButton: "#E0E0E0",
+  displayBackground: BACKGROUND,
+  buttonBackground: "#161B22",
+  operatorAccent: ACCENT,
+  textPrimary: PRIMARY_TEXT,
+  textSecondary: SECONDARY_TEXT,
+  numberButton: "#1C2128",
+  functionButton: "#262D33",
 };
 
 export const ChatColors = {
-  senderBubble: "#8B5A3C",
-  receiverBubble: "#3A3A3A",
-  backgroundGradientStart: "#F0F0F0",
-  backgroundGradientEnd: "#FFFFFF",
-  surface: "#FFFFFF",
-  textOnBubbles: "#FFFFFF",
-  textSecondary: "#8E8E93",
-  readReceiptBlue: "#0084FF",
-  errorRed: "#FF3B30",
-  tickGray: "#8E8E93",
+  senderBubble: ACCENT,
+  receiverBubble: "#262D33",
+  backgroundGradientStart: BACKGROUND,
+  backgroundGradientEnd: BACKGROUND,
+  surface: "#161B22",
+  textOnBubbles: PRIMARY_TEXT,
+  textSecondary: SECONDARY_TEXT,
+  readReceiptBlue: ACCENT,
+  errorRed: DANGER,
+  tickGray: SECONDARY_TEXT,
 };
 
 export const Spacing = {
@@ -100,17 +104,17 @@ export const Typography = {
   body: {
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: "400" as const,
+    fontWeight: "600" as const,
   },
   small: {
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: "400" as const,
+    fontWeight: "600" as const,
   },
   link: {
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: "400" as const,
+    fontWeight: "600" as const,
   },
   calculatorResult: {
     fontSize: 48,
@@ -120,7 +124,7 @@ export const Typography = {
   calculatorPreview: {
     fontSize: 20,
     lineHeight: 28,
-    fontWeight: "400" as const,
+    fontWeight: "600" as const,
   },
   pairingCode: {
     fontSize: 48,

@@ -23,7 +23,7 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
-import { Spacing, BorderRadius, ChatColors } from "@/constants/theme";
+import { Spacing, BorderRadius, ChatColors, CalculatorColors } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getDeviceId, savePairingData } from "@/lib/storage";
 import { joinWithCode } from "@/lib/api";
@@ -258,7 +258,7 @@ export default function CodeEntryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: CalculatorColors.displayBackground,
     paddingHorizontal: Spacing.lg,
   },
   centered: {
@@ -272,13 +272,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#000000",
+    color: ChatColors.textOnBubbles,
     marginBottom: Spacing.md,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#8E8E93",
+    color: ChatColors.textSecondary,
     textAlign: "center",
     lineHeight: 24,
     paddingHorizontal: Spacing.lg,
@@ -293,16 +293,16 @@ const styles = StyleSheet.create({
     width: 64,
     height: 80,
     borderRadius: BorderRadius.md,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: ChatColors.receiverBubble,
     fontSize: 32,
     fontWeight: "700",
     textAlign: "center",
-    color: "#000000",
+    color: ChatColors.textOnBubbles,
   },
   codeInputFilled: {
-    backgroundColor: "rgba(139, 90, 60, 0.1)",
+    backgroundColor: ChatColors.readReceiptBlue + "20",
     borderWidth: 2,
-    borderColor: ChatColors.senderBubble,
+    borderColor: ChatColors.readReceiptBlue,
   },
   codeInputError: {
     borderWidth: 2,
@@ -318,6 +318,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 14,
     color: ChatColors.errorRed,
+    fontWeight: "600",
   },
   buttonContainer: {
     marginTop: Spacing.xl,
@@ -326,7 +327,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: ChatColors.senderBubble,
+    backgroundColor: ChatColors.readReceiptBlue,
     borderRadius: BorderRadius.full,
     height: 56,
     gap: Spacing.sm,
@@ -336,8 +337,8 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    fontWeight: "700",
+    color: ChatColors.textOnBubbles,
   },
   successIconContainer: {
     marginBottom: Spacing.xl,
@@ -345,11 +346,11 @@ const styles = StyleSheet.create({
   successText: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#34C759",
+    color: ChatColors.readReceiptBlue,
     marginBottom: Spacing.sm,
   },
   successSubtext: {
     fontSize: 16,
-    color: "#8E8E93",
+    color: ChatColors.textSecondary,
   },
 });
