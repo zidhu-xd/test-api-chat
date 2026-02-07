@@ -27,7 +27,6 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import * as ScreenCapture from "expo-screen-capture";
-import * as Notifications from "expo-notifications";
 
 import { Spacing, BorderRadius, ChatColors } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -46,72 +45,6 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const POLL_INTERVAL = 1000;
-
-// Message bubble component with read/delivered indicators
-interface MessageBubbleProps {
-  message: Message;
-  isSender: boolean;
-  isLastSenderMessage: boolean;
-}
-
-function MessageBubble({ message, isSender, isLastSenderMessage }: MessageBubbleProps) {
-  const time = new Date(message.timestamp).toLocaleTimeString([], { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  });
-
-  // Debug logging for tick system
-  if (isSender && isLastSenderMessage) {
-    console.log("[v0] Message tick status:", {
-      messageId: message.id,
-      isSender,
-      isLastSenderMessage,
-      read: message.read,
-      delivered: message.delivered,
-      showDouble: message.read,
-    });
-  }
-
-  return (
-    <Animated.View
-      style={[
-        styles.messageBubbleContainer,
-        isSender ? styles.senderContainer : styles.receiverContainer,
-      ]}
-      entering={isSender ? SlideInRight.duration(200) : FadeIn.duration(200)}
-    >
-      <View
-        style={[
-          styles.messageBubble,
-          isSender ? styles.senderBubble : styles.receiverBubble,
-        ]}
-      >
-        <Text style={styles.messageText}>{message.content}</Text>
-        <View style={styles.timeAndTicksContainer}>
-          <Text style={styles.timestampText}>{time}</Text>
-          {isSender && isLastSenderMessage && (
-            <View style={styles.tickContainer}>
-              <Feather 
-                name="check" 
-                size={14} 
-                color={message.read ? ChatColors.readReceiptBlue : "rgba(255, 255, 255, 0.6)"}
-                style={styles.firstTick}
-              />
-              {message.read && (
-                <Feather 
-                  name="check" 
-                  size={14} 
-                  color={ChatColors.readReceiptBlue}
-                  style={styles.secondTick}
-                />
-              )}
-            </View>
-          )}
-        </View>
-      </View>
-    </Animated.View>
-  );
-}
 
 // Typing indicator component with animated dots
 function TypingIndicator() {
@@ -178,19 +111,19 @@ function TypingIndicator() {
 import * as ImagePicker from 'expo-image-picker';
 
 // Inside ChatScreen component
-  const handlePickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
+const handlePickImage = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    quality: 1,
+  });
 
-    if (!result.canceled && result.assets[0].uri && pairingData) {
-      // Logic to upload image via existing backend would go here
-      // For now, we simulate sending the URI if the backend supports it
-      await sendMessage(pairingData.pairId, pairingData.deviceId, `[IMAGE]:${result.assets[0].uri}`);
-    }
-  };
+  if (!result.canceled && result.assets[0].uri && pairingData) {
+    // Logic to upload image via existing backend would go here
+    // For now, we simulate sending the URI if the backend supports it
+    await sendMessage(pairingData.pairId, pairingData.deviceId, `[IMAGE]:${result.assets[0].uri}`);
+  }
+};
 
 // In MessageBubble component (modify to display images)
 function MessageBubble({ message, isSender, isLastSenderMessage }: MessageBubbleProps) {
@@ -231,9 +164,9 @@ function EmptyState() {
       <View style={styles.emptyStateIconContainer}>
         <Feather name="lock" size={48} color="#C7C7CC" />
       </View>
-      <Text style={styles.emptyStateTitle}>Secure Chat</Text>
+      <Text style={styles.emptyStateTitle}>Calc-XD</Text>
       <Text style={styles.emptyStateSubtitle}>
-        Your messages are private.{"\n"}Start typing to send a message.
+        Welcome to Calc-XD.{"\n"}Start typing to send a message.
       </Text>
     </View>
   );
@@ -259,35 +192,6 @@ export default function ChatScreen() {
   const sendButtonAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: sendButtonScale.value }],
   }));
-
-  // Setup notifications
-  useEffect(() => {
-    if (Platform.OS === "web") return;
-
-    // Set notification handler
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-      }),
-    });
-
-    // Handle notification response (when user taps notification)
-    const subscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        console.log("[v0] Notification tapped, navigating to Calculator");
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "Calculator" }],
-        });
-      }
-    );
-
-    return () => {
-      subscription.remove();
-    };
-  }, [navigation]);
 
   // Prevent screenshots
   useEffect(() => {
@@ -350,47 +254,26 @@ export default function ChatScreen() {
       const response = await pollMessages(pairingData.pairId, pairingData.deviceId);
 
       if (response.success && response.data) {
-        const newMessages = response.data.messages;
-        const oldMessageCount = messages.length;
-        setMessages(newMessages);
+        setMessages(response.data.messages);
         setPartnerTyping(response.data.partnerTyping);
 
-        // Check for new incoming messages and send notification
-        const newIncomingMessages = newMessages.filter(
+        // Mark unread messages as read
+        const unreadMessages = response.data.messages.filter(
           (msg) => !msg.read && msg.senderId !== pairingData.deviceId
         );
 
-        if (newIncomingMessages.length > oldMessageCount) {
-          // New message received - send notification
-          if (Platform.OS !== "web") {
-            await Notifications.scheduleNotificationAsync({
-              content: {
-                title: "New XD Calculations Available!",
-                body: "Check now",
-                sound: "default",
-                badge: 1,
-                data: {
-                  screen: "Chat",
-                },
-              },
-              trigger: null, // Send immediately
-            });
-          }
-        }
-
-        // Mark unread messages as read
-        if (newIncomingMessages.length > 0) {
+        if (unreadMessages.length > 0) {
           await markMessagesRead(
             pairingData.pairId,
             pairingData.deviceId,
-            newIncomingMessages.map((msg) => msg.id)
+            unreadMessages.map((msg) => msg.id)
           );
         }
       }
     } catch {
       // Silently fail
     }
-  }, [pairingData, isScreenVisible, messages.length]);
+  }, [pairingData, isScreenVisible]);
 
   useEffect(() => {
     if (!pairingData) return;
@@ -547,8 +430,8 @@ export default function ChatScreen() {
       {/* Menu Dropdown */}
       {showMenu ? (
         <Animated.View style={styles.menuDropdown} entering={FadeIn.duration(150)}>
-          <Pressable 
-            style={styles.menuItem} 
+          <Pressable
+            style={styles.menuItem}
             onPress={() => {
               setShowMenu(false);
               navigation.navigate('Settings');
@@ -572,14 +455,13 @@ export default function ChatScreen() {
         {/* Messages List */}
         <FlatList
           ref={flatListRef}
-          data={messages}
+          data={messages.length > 0 ? [...messages].reverse() : []}
           keyExtractor={(item) => item.id}
+          inverted={messages.length > 0}
           renderItem={({ item, index }) => {
             const isSender = item.senderId === pairingData?.deviceId;
-            // Check if this is the last message from sender
-            const isLastSenderMessage = isSender && 
-              !messages.slice(index + 1).some(m => m.senderId === pairingData?.deviceId);
-            
+            const isLastSenderMessage = isSender && (index === 0 || !messages.slice(0, index).some(m => m.senderId === pairingData?.deviceId));
+
             return (
               <MessageBubble
                 message={item}
@@ -594,10 +476,9 @@ export default function ChatScreen() {
           ]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={<EmptyState />}
-          ListFooterComponent={
+          ListHeaderComponent={
             partnerTyping ? <TypingIndicator /> : null
           }
-          inverted
         />
 
         {/* Input Bar */}
@@ -648,7 +529,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ChatColors.backgroundGradientStart,
+    backgroundColor: "#F8F8F8",
   },
   header: {
     flexDirection: "row",
@@ -656,9 +537,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    backgroundColor: ChatColors.surface,
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: ChatColors.textSecondary + "20",
+    borderBottomColor: "#E0E0E0",
   },
   headerButton: {
     width: 40,
@@ -668,8 +549,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: "700",
-    color: ChatColors.textOnBubbles,
+    fontWeight: "600",
+    color: "#000000",
   },
   headerRight: {
     flexDirection: "row",
@@ -679,11 +560,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 100,
     right: Spacing.lg,
-    backgroundColor: ChatColors.surface,
+    backgroundColor: "#FFFFFF",
     borderRadius: BorderRadius.sm,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 8,
     zIndex: 100,
@@ -698,7 +579,6 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 16,
     color: ChatColors.errorRed,
-    fontWeight: "600",
   },
   keyboardAvoid: {
     flex: 1,
@@ -741,28 +621,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: ChatColors.textOnBubbles,
     lineHeight: 22,
-    marginBottom: Spacing.xs,
-  },
-  timeAndTicksContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 4,
   },
   timestampText: {
     fontSize: 10,
     color: "rgba(255, 255, 255, 0.7)",
+    alignSelf: "flex-end",
+    marginTop: 2,
   },
   tickContainer: {
     flexDirection: "row",
-    gap: 2,
-    marginLeft: 2,
-  },
-  firstTick: {
-    marginRight: -4,
+    marginTop: 2,
+    marginRight: 4,
   },
   secondTick: {
-    marginLeft: -4,
+    marginLeft: -8,
   },
   typingContainer: {
     alignSelf: "flex-start",
@@ -793,20 +665,20 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: ChatColors.readReceiptBlue + "20",
+    backgroundColor: "rgba(199, 199, 204, 0.2)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: Spacing.xl,
   },
   emptyStateTitle: {
     fontSize: 20,
-    fontWeight: "700",
-    color: ChatColors.textSecondary,
+    fontWeight: "600",
+    color: "#8E8E93",
     marginBottom: Spacing.sm,
   },
   emptyStateSubtitle: {
     fontSize: 15,
-    color: ChatColors.textSecondary,
+    color: "#C7C7CC",
     textAlign: "center",
     lineHeight: 22,
   },
@@ -815,22 +687,21 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-    backgroundColor: ChatColors.surface,
+    backgroundColor: "#FFFFFF",
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: ChatColors.textSecondary + "20",
+    borderTopColor: "#E0E0E0",
     gap: Spacing.sm,
   },
   textInput: {
     flex: 1,
     minHeight: 40,
     maxHeight: 120,
-    backgroundColor: ChatColors.receiverBubble,
+    backgroundColor: "#F5F5F5",
     borderRadius: 20,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     fontSize: 16,
-    color: ChatColors.textOnBubbles,
-    fontWeight: "600",
+    color: "#000000",
   },
   attachButton: {
     padding: 8,
@@ -841,7 +712,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: ChatColors.readReceiptBlue,
+    backgroundColor: ChatColors.senderBubble,
     justifyContent: "center",
     alignItems: "center",
   },
