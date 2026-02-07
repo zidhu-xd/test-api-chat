@@ -1,0 +1,128 @@
+I already have a working React Native Android APK that looks like a normal calculator app on launch.
+The app already has a secret chat feature and a working backend (use my existing backend URL exactly as it is, do NOT change backend logic or endpoints).
+
+🔢 Calculator & Secret Access Logic
+
+On app open, show a fully functional native calculator UI.
+
+Default secret access code is 1234.
+
+When the user enters 1234 and presses the equals button, this should open the hidden secret flow.
+
+🔁 First Time Secret Access (1234 – First Use)
+
+When 1234 is entered for the first time, show a hidden screen with two options only:
+
+Generate Pairing Code
+
+Enter Pairing Code
+
+“Generate Pairing Code” should generate a unique pairing code using existing backend logic.
+
+“Enter Pairing Code” should allow the user to input a code and pair with another device.
+
+🔄 Factory Reset Code
+
+If the user enters 5678 on the calculator and presses equals:
+
+Perform a full factory reset inside the app:
+
+Clear all chats
+
+Unpair all devices
+
+Reset secret state
+
+Reset settings
+
+Clear locally stored app data (like app storage reset)
+
+After reset, entering 1234 again must behave like first time setup and show pairing options again.
+
+💬 Secret Chat Screen
+
+After successful pairing, open the secret chat screen.
+
+Show a Chat icon UI.
+
+On the top right of the chat screen, add a three dot (⋮) menu.
+
+⋮ Three Dot Menu Options
+
+When the user taps the three dot menu, show:
+
+Clear Chat
+
+Settings
+
+⚙️ Settings Screen (VERY IMPORTANT)
+
+Inside Settings, implement the following:
+
+🔐 Security
+
+Option to change the calculator secret passcode (default is 1234).
+
+New passcode must be saved securely in app storage.
+
+🔌 Pairing
+
+Option to Unpair Device:
+
+Disconnect from paired user
+
+Clear chat history
+
+Return to pairing screen on next 1234 entry
+
+🎭 App Icon Customization
+
+Allow the user to change the APK app icon from inside the app.
+
+Provide multiple selectable icons (calculator, notes, system-style icons, etc).
+
+Selected icon must:
+
+Persist after app restart
+
+Reflect immediately using Android dynamic icon switching
+
+🗂 App Storage
+
+Settings changes must persist using proper local storage (AsyncStorage / SecureStorage).
+
+📩 Chat UI Behaviour (WhatsApp-like)
+
+The app already has:
+
+Blue tick when the other user sees the message
+
+Modify behavior so that:
+
+If multiple messages are sent, only the LAST message shows the blue tick
+
+Add timestamp to every message.
+
+Allow swipe left on a message to:
+
+Show message time
+
+Reply to that specific message (reply preview like WhatsApp)
+
+⚠️ Rules
+
+Do NOT remove or rewrite existing secret chat logic.
+
+Do NOT break backend integration.
+
+Use my existing backend URL exactly.
+
+No placeholder logic.
+
+No demo code.
+
+Everything must be production-ready and error-free.
+
+🎯 Goal
+
+Update the existing app by adding these features cleanly, without breaking current functionality, and keeping the calculator disguise intact.
