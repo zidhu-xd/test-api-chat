@@ -44,7 +44,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const POLL_INTERVAL = 1500;
+const POLL_INTERVAL = 1000;
 
 // Typing indicator component with animated dots
 function TypingIndicator() {
@@ -111,19 +111,19 @@ function TypingIndicator() {
 import * as ImagePicker from 'expo-image-picker';
 
 // Inside ChatScreen component
-  const handlePickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
+const handlePickImage = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    quality: 1,
+  });
 
-    if (!result.canceled && result.assets[0].uri && pairingData) {
-      // Logic to upload image via existing backend would go here
-      // For now, we simulate sending the URI if the backend supports it
-      await sendMessage(pairingData.pairId, pairingData.deviceId, `[IMAGE]:${result.assets[0].uri}`);
-    }
-  };
+  if (!result.canceled && result.assets[0].uri && pairingData) {
+    // Logic to upload image via existing backend would go here
+    // For now, we simulate sending the URI if the backend supports it
+    await sendMessage(pairingData.pairId, pairingData.deviceId, `[IMAGE]:${result.assets[0].uri}`);
+  }
+};
 
 // In MessageBubble component (modify to display images)
 function MessageBubble({ message, isSender, isLastSenderMessage }: MessageBubbleProps) {
@@ -164,9 +164,9 @@ function EmptyState() {
       <View style={styles.emptyStateIconContainer}>
         <Feather name="lock" size={48} color="#C7C7CC" />
       </View>
-      <Text style={styles.emptyStateTitle}>Secure Chat</Text>
+      <Text style={styles.emptyStateTitle}>Calc-XD</Text>
       <Text style={styles.emptyStateSubtitle}>
-        Your messages are private.{"\n"}Start typing to send a message.
+        Welcome to Calc-XD.{"\n"}Start typing to send a message.
       </Text>
     </View>
   );
@@ -430,8 +430,8 @@ export default function ChatScreen() {
       {/* Menu Dropdown */}
       {showMenu ? (
         <Animated.View style={styles.menuDropdown} entering={FadeIn.duration(150)}>
-          <Pressable 
-            style={styles.menuItem} 
+          <Pressable
+            style={styles.menuItem}
             onPress={() => {
               setShowMenu(false);
               navigation.navigate('Settings');
@@ -461,7 +461,7 @@ export default function ChatScreen() {
           renderItem={({ item, index }) => {
             const isSender = item.senderId === pairingData?.deviceId;
             const isLastSenderMessage = isSender && (index === 0 || !messages.slice(0, index).some(m => m.senderId === pairingData?.deviceId));
-            
+
             return (
               <MessageBubble
                 message={item}

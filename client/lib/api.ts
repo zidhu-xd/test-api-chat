@@ -76,6 +76,7 @@ export interface Message {
   content: string;
   timestamp: string;
   read: boolean;
+  delivered?: boolean;
 }
 
 export async function pollMessages(

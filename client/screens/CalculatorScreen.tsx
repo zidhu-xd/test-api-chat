@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -29,6 +29,7 @@ import {
 } from "@/lib/storage";
 import { resetDevice } from "@/lib/api";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { CalculatorModel } from "@/lib/CalculatorModel";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BUTTON_MARGIN = 8;
@@ -129,121 +130,80 @@ export default function CalculatorScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<CalculatorNavigationProp>();
 
+  // MVP Pattern: Model instance
+  const modelRef = useRef(new CalculatorModel());
+  
+  // View state: synced from model
   const [display, setDisplay] = useState("0");
   const [expression, setExpression] = useState("");
   const [preview, setPreview] = useState("");
-  const [lastOperator, setLastOperator] = useState<string | null>(null);
-  const [waitingForOperand, setWaitingForOperand] = useState(false);
-  const [previousValue, setPreviousValue] = useState<number | null>(null);
 
+  /**
+   * Sync view from model
+   * Called after any model state change
+   */
+  const syncViewFromModel = useCallback(() => {
+    const state = modelRef.current.getState();
+    setDisplay(state.display);
+    setExpression(state.expression);
+    setPreview(state.preview);
+  }, []);
+
+  /**
+   * Presenter: Handle clear action
+   */
   const handleClear = useCallback(() => {
-    setDisplay("0");
-    setExpression("");
-    setPreview("");
-    setLastOperator(null);
-    setWaitingForOperand(false);
-    setPreviousValue(null);
-  }, []);
+    modelRef.current.clear();
+    syncViewFromModel();
+  }, [syncViewFromModel]);
 
-  // Calculate live preview
-  const calculateResult = useCallback((expr: string): string => {
-    try {
-      // Replace display operators with JS operators
-      let sanitized = expr
-        .replace(/×/g, "*")
-        .replace(/÷/g, "/")
-        .replace(/−/g, "-");
 
-      // Remove trailing operator
-      sanitized = sanitized.replace(/[+\-*/]$/, "");
 
-      if (!sanitized) return "";
-
-      // Safe evaluation using Function
-      const result = new Function(`return ${sanitized}`)();
-
-      if (typeof result === "number" && isFinite(result)) {
-        // Format the result
-        if (Number.isInteger(result)) {
-          return result.toString();
-        }
-        return parseFloat(result.toFixed(8)).toString();
-      }
-      return "";
-    } catch {
-      return "";
-    }
-  }, []);
-
-  // Update preview when expression changes
-  useEffect(() => {
-    if (expression) {
-      const result = calculateResult(expression);
-      setPreview(result);
-    } else {
-      setPreview("");
-    }
-  }, [expression, calculateResult]);
-
+  /**
+   * Presenter: Handle number input
+   */
   const handleNumber = useCallback(
     (num: string) => {
-      if (waitingForOperand) {
-        setDisplay(num);
-        setExpression((prev) => prev + num);
-        setWaitingForOperand(false);
-      } else {
-        const newDisplay = display === "0" ? num : display + num;
-        setDisplay(newDisplay);
-        if (expression === "" || expression === "0") {
-          setExpression(num);
-        } else {
-          setExpression((prev) => prev + num);
-        }
-      }
+      modelRef.current.inputNumber(num);
+      syncViewFromModel();
     },
-    [display, expression, waitingForOperand]
+    [syncViewFromModel]
   );
 
+  /**
+   * Presenter: Handle operator input
+   */
   const handleOperator = useCallback(
     (op: string) => {
-      const opSymbol =
-        op === "*" ? "×" : op === "/" ? "÷" : op === "-" ? "−" : op;
-
-      if (waitingForOperand && lastOperator) {
-        // Replace the last operator
-        setExpression((prev) => prev.slice(0, -1) + opSymbol);
-        setLastOperator(op);
-        return;
-      }
-
-      setExpression((prev) => (prev || display) + opSymbol);
-      setLastOperator(op);
-      setWaitingForOperand(true);
-      setPreviousValue(parseFloat(display));
+      modelRef.current.inputOperator(op);
+      syncViewFromModel();
     },
-    [display, waitingForOperand, lastOperator]
+    [syncViewFromModel]
   );
 
+  /**
+   * Presenter: Handle equals button
+   * Delegates to model for calculation, then checks for special codes
+   * PIN structure preserved: 4-digit unlock codes still work
+   */
   const handleEquals = useCallback(async () => {
-    // Check for codes
-    const currentExpression = expression || display;
+    // Get current input BEFORE finalization (for PIN checking)
+    const currentInput = modelRef.current.getCurrentInput();
     const unlockCode = await getPasscode();
 
-    if (currentExpression === FACTORY_RESET_CODE) {
-      // FULL DEVICE RESET - clear all data locally and on server
+    // Check for factory reset code (5678)
+    if (currentInput === FACTORY_RESET_CODE) {
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       }
       
       try {
         const deviceId = await getDeviceId();
-        // Reset server-side pairing
         await resetDevice(deviceId);
       } catch {
-        console.log("[v0] Server reset failed, but continuing with local reset");
+        console.log("[v0] Server reset failed, continuing with local reset");
       }
       
-      // Reset all local data and generate new device ID
       await fullDeviceReset();
       handleClear();
       navigation.reset({
@@ -253,12 +213,12 @@ export default function CalculatorScreen() {
       return;
     }
 
-    if (currentExpression === unlockCode) {
+    // Check for unlock code (4-digit PIN)
+    if (currentInput === unlockCode) {
       const unlockUsed = await hasUnlockBeenUsed();
       const paired = await isPaired();
 
       if (paired) {
-        // Already paired, go to chat
         await markUnlockUsed();
         navigation.navigate("Chat");
         handleClear();
@@ -266,7 +226,6 @@ export default function CalculatorScreen() {
       }
 
       if (!unlockUsed) {
-        // First time unlock, go to pairing
         await markUnlockUsed();
         navigation.navigate("PairingChoice");
         handleClear();
@@ -274,81 +233,40 @@ export default function CalculatorScreen() {
       }
     }
 
-    // Normal calculation
-    const result = calculateResult(expression || display);
-    if (result) {
-      setDisplay(result);
-      setExpression("");
-      setPreview("");
-      setLastOperator(null);
-      setWaitingForOperand(false);
-      setPreviousValue(null);
-    }
-  }, [display, expression, calculateResult, navigation, handleClear]);
+    // Normal calculation: finalize result
+    modelRef.current.finalize();
+    syncViewFromModel();
+  }, [navigation, handleClear, syncViewFromModel]);
 
+  /**
+   * Presenter: Handle percent button
+   */
   const handlePercent = useCallback(() => {
-    const current = parseFloat(display);
-    const result = current / 100;
-    const resultStr = result.toString();
-    setDisplay(resultStr);
+    modelRef.current.inputPercent();
+    syncViewFromModel();
+  }, [syncViewFromModel]);
 
-    if (expression) {
-      // Replace the last number in expression with percentage
-      const match = expression.match(/(\d+\.?\d*)$/);
-      if (match) {
-        setExpression(expression.slice(0, -match[0].length) + resultStr);
-      }
-    } else {
-      setExpression(resultStr);
-    }
-  }, [display, expression]);
-
+  /**
+   * Presenter: Handle decimal input
+   */
   const handleDecimal = useCallback(() => {
-    if (waitingForOperand) {
-      setDisplay("0.");
-      setExpression((prev) => prev + "0.");
-      setWaitingForOperand(false);
-    } else if (!display.includes(".")) {
-      setDisplay(display + ".");
-      setExpression((prev) => (prev || "0") + ".");
-    }
-  }, [display, waitingForOperand]);
+    modelRef.current.inputDecimal();
+    syncViewFromModel();
+  }, [syncViewFromModel]);
 
+  /**
+   * Presenter: Handle plus/minus toggle
+   */
   const handlePlusMinus = useCallback(() => {
-    if (display !== "0") {
-      const newDisplay = display.startsWith("-")
-        ? display.slice(1)
-        : "-" + display;
-      setDisplay(newDisplay);
+    modelRef.current.togglePlusMinus();
+    syncViewFromModel();
+  }, [syncViewFromModel]);
 
-      // Update expression
-      if (expression) {
-        const match = expression.match(/-?(\d+\.?\d*)$/);
-        if (match) {
-          const num = match[0];
-          const newNum = num.startsWith("-") ? num.slice(1) : "-" + num;
-          setExpression(expression.slice(0, -num.length) + newNum);
-        }
-      } else {
-        setExpression(newDisplay);
-      }
-    }
-  }, [display, expression]);
-
-  // Format display for large numbers
+  /**
+   * Format display for view (delegates to model)
+   */
   const formatDisplay = (value: string): string => {
-    const num = parseFloat(value);
-    if (isNaN(num)) return value;
-
-    if (Math.abs(num) >= 1e9) {
-      return num.toExponential(4);
-    }
-
-    if (value.length > 12) {
-      return parseFloat(num.toPrecision(10)).toString();
-    }
-
-    return value;
+    return modelRef.current.formatDisplay(value);
   };
 
   return (
