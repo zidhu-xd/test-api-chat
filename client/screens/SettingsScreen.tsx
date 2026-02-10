@@ -1,11 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Modal, TextInput, Platform, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Spacing, BorderRadius, ChatColors, Colors } from '@/constants/theme';
+import { Spacing, BorderRadius, Colors } from '@/constants/theme';
 import { getPasscode, setPasscode, getSelectedIcon, setSelectedIcon, getDeviceId } from '@/lib/storage';
 import { resetDevice } from '@/lib/api';
+import { ThemeContext } from '@/context/ThemeContext';
 
 const AVAILABLE_ICONS = [
   { id: 'calculator', name: 'Calculator', icon: 'grid-3x3' },
@@ -15,12 +16,21 @@ const AVAILABLE_ICONS = [
   { id: 'key', name: 'Key', icon: 'key' },
 ];
 
+const AVAILABLE_THEMES = [
+    { id: 'dark', name: 'Dark' },
+    { id: 'matrix', name: 'Matrix' },
+    { id: 'cyberpunk', name: 'Cyberpunk' },
+    { id: 'classic', name: 'Classic' },
+  ];
+
 export default function SettingsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { theme, themeName, setTheme } = useContext(ThemeContext);
   const [currentPasscode, setCurrentPasscode] = useState('1234');
   const [selectedIcon, setSelectedIconState] = useState('calculator');
   const [showPinModal, setShowPinModal] = useState(false);
   const [showIconModal, setShowIconModal] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -80,6 +90,12 @@ export default function SettingsScreen({ navigation }: any) {
     if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  const handleThemeSelect = async (themeId: keyof typeof Colors) => {
+    setTheme(themeId);
+    setShowThemeModal(false);
+    if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
   const handleResetDevice = async () => {
     Alert.alert(
       'Reset Device',
@@ -89,123 +105,122 @@ export default function SettingsScreen({ navigation }: any) {
   };
 
   const currentIconLabel = AVAILABLE_ICONS.find(i => i.id === selectedIcon)?.name || 'Unknown';
+  const currentThemeLabel = AVAILABLE_THEMES.find(t => t.id === themeName)?.name || 'Unknown';
 
   const currentPinInput = pinStep === 'current' ? currentPin : pinStep === 'new' ? newPin : confirmPin;
   const setCurrentPinInput = pinStep === 'current' ? setCurrentPin : pinStep === 'new' ? setNewPin : setConfirmPin;
   const pinStepLabel = pinStep === 'current' ? 'Enter Current PIN' : pinStep === 'new' ? 'Enter New PIN' : 'Confirm New PIN';
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: ChatColors.surface }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.backgroundDefault }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: theme.backgroundSecondary + '80' }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="chevron-left" size={24} color={ChatColors.textOnBubbles} />
+          <Feather name="chevron-left" size={24} color={theme.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Settings</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* SECURITY SECTION */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Security</Text>
+          <Text style={[styles.sectionTitle, { color: theme.tabIconDefault }]}>Security</Text>
           
           {/* Change PIN */}
-          <Pressable style={styles.settingItem} onPress={() => setShowPinModal(true)}>
+          <Pressable style={[styles.settingItem, { backgroundColor: theme.backgroundSecondary }]} onPress={() => setShowPinModal(true)}>
             <View style={styles.settingLeft}>
-              <Feather name="lock" size={20} color={ChatColors.readReceiptBlue} style={styles.icon} />
+              <Feather name="lock" size={20} color={theme.link} style={styles.icon} />
               <View>
-                <Text style={styles.settingLabel}>Change PIN</Text>
-                <Text style={styles.settingValue}>Update calculator unlock PIN</Text>
+                <Text style={[styles.settingLabel, { color: theme.text }]}>Change PIN</Text>
+                <Text style={[styles.settingValue, { color: theme.tabIconDefault }]}>Update calculator unlock PIN</Text>
               </View>
             </View>
-            <Feather name="chevron-right" size={20} color={ChatColors.textSecondary} />
+            <Feather name="chevron-right" size={20} color={theme.tabIconDefault} />
           </Pressable>
 
           {/* Reset Device */}
-          <Pressable style={styles.settingItem} onPress={handleResetDevice}>
+          <Pressable style={[styles.settingItem, { backgroundColor: theme.backgroundSecondary }]} onPress={handleResetDevice}>
             <View style={styles.settingLeft}>
-              <Feather name="refresh-cw" size={20} color={ChatColors.errorRed} style={styles.icon} />
+              <Feather name="refresh-cw" size={20} color={theme.link} style={styles.icon} />
               <View>
-                <Text style={[styles.settingLabel, { color: ChatColors.errorRed }]}>Reset Device</Text>
-                <Text style={styles.settingValue}>Enter 5678 to factory reset</Text>
+                <Text style={[styles.settingLabel, { color: theme.link }]}>Reset Device</Text>
+                <Text style={[styles.settingValue, { color: theme.tabIconDefault }]}>Enter 5678 to factory reset</Text>
               </View>
             </View>
-            <Feather name="chevron-right" size={20} color={ChatColors.errorRed} />
+            <Feather name="chevron-right" size={20} color={theme.link} />
           </Pressable>
 
           {/* Calculator Lock */}
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: theme.backgroundSecondary }]}>
             <View style={styles.settingLeft}>
-              <Feather name="shield" size={20} color={ChatColors.readReceiptBlue} style={styles.icon} />
+              <Feather name="shield" size={20} color={theme.link} style={styles.icon} />
               <View>
-                <Text style={styles.settingLabel}>Calculator Lock</Text>
-                <Text style={styles.settingValue}>Enabled</Text>
+                <Text style={[styles.settingLabel, { color: theme.text }]}>Calculator Lock</Text>
+                <Text style={[styles.settingValue, { color: theme.tabIconDefault }]}>Enabled</Text>
               </View>
             </View>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>ON</Text>
+            <View style={[styles.badge, { backgroundColor: theme.link + '20'}]}>
+              <Text style={[styles.badgeText, { color: theme.link }]}>ON</Text>
             </View>
           </View>
         </View>
 
         {/* APPEARANCE SECTION */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
+          <Text style={[styles.sectionTitle, { color: theme.tabIconDefault }]}>Appearance</Text>
           
           {/* App Icon Selector */}
-          <Pressable style={styles.settingItem} onPress={() => setShowIconModal(true)}>
+          <Pressable style={[styles.settingItem, { backgroundColor: theme.backgroundSecondary }]} onPress={() => setShowIconModal(true)}>
             <View style={styles.settingLeft}>
-              <Feather name="image" size={20} color={ChatColors.readReceiptBlue} style={styles.icon} />
+              <Feather name="image" size={20} color={theme.link} style={styles.icon} />
               <View>
-                <Text style={styles.settingLabel}>App Icon</Text>
-                <Text style={styles.settingValue}>{currentIconLabel}</Text>
+                <Text style={[styles.settingLabel, { color: theme.text }]}>App Icon</Text>
+                <Text style={[styles.settingValue, { color: theme.tabIconDefault }]}>{currentIconLabel}</Text>
               </View>
             </View>
-            <Feather name="chevron-right" size={20} color={ChatColors.textSecondary} />
+            <Feather name="chevron-right" size={20} color={theme.tabIconDefault} />
           </Pressable>
 
           {/* Theme */}
-          <View style={styles.settingItem}>
+          <Pressable style={[styles.settingItem, { backgroundColor: theme.backgroundSecondary }]} onPress={() => setShowThemeModal(true)}>
             <View style={styles.settingLeft}>
-              <Feather name="moon" size={20} color={ChatColors.readReceiptBlue} style={styles.icon} />
+              <Feather name="moon" size={20} color={theme.link} style={styles.icon} />
               <View>
-                <Text style={styles.settingLabel}>Theme</Text>
-                <Text style={styles.settingValue}>Dark (Minimal Bold)</Text>
+                <Text style={[styles.settingLabel, { color: theme.text }]}>Theme</Text>
+                <Text style={[styles.settingValue, { color: theme.tabIconDefault }]}>{currentThemeLabel}</Text>
               </View>
             </View>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>ON</Text>
-            </View>
-          </View>
+            <Feather name="chevron-right" size={20} color={theme.tabIconDefault} />
+          </Pressable>
         </View>
 
         {/* ABOUT SECTION */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>About</Text>
+          <Text style={[styles.sectionTitle, { color: theme.tabIconDefault }]}>About</Text>
           
           {/* App Version */}
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: theme.backgroundSecondary }]}>
             <View style={styles.settingLeft}>
-              <Feather name="info" size={20} color={ChatColors.readReceiptBlue} style={styles.icon} />
+              <Feather name="info" size={20} color={theme.link} style={styles.icon} />
               <View>
-                <Text style={styles.settingLabel}>App Version</Text>
-                <Text style={styles.settingValue}>1.0.0</Text>
+                <Text style={[styles.settingLabel, { color: theme.text }]}>App Version</Text>
+                <Text style={[styles.settingValue, { color: theme.tabIconDefault }]}>1.0.0</Text>
               </View>
             </View>
-            <Feather name="chevron-right" size={20} color={ChatColors.textSecondary} />
+            <Feather name="chevron-right" size={20} color={theme.tabIconDefault} />
           </View>
 
           {/* Device ID */}
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: theme.backgroundSecondary }]}>
             <View style={styles.settingLeft}>
-              <Feather name="hash" size={20} color={ChatColors.readReceiptBlue} style={styles.icon} />
+              <Feather name="hash" size={20} color={theme.link} style={styles.icon} />
               <View>
-                <Text style={styles.settingLabel}>Device ID</Text>
-                <Text style={styles.settingValueSmall}>Unique identifier</Text>
+                <Text style={[styles.settingLabel, { color: theme.text }]}>Device ID</Text>
+                <Text style={[styles.settingValueSmall, { color: theme.tabIconDefault }]}>Unique identifier</Text>
               </View>
             </View>
-            <Feather name="chevron-right" size={20} color={ChatColors.textSecondary} />
+            <Feather name="chevron-right" size={20} color={theme.tabIconDefault} />
           </View>
         </View>
 
@@ -215,28 +230,28 @@ export default function SettingsScreen({ navigation }: any) {
       {/* PIN Modal */}
       <Modal visible={showPinModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{pinStepLabel}</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundSecondary }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>{pinStepLabel}</Text>
             <TextInput
-              style={styles.pinInput}
+              style={[styles.pinInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]} 
               placeholder="••••"
               secureTextEntry
               keyboardType="number-pad"
               maxLength={4}
               value={currentPinInput}
               onChangeText={setCurrentPinInput}
-              placeholderTextColor={ChatColors.textSecondary}
+              placeholderTextColor={theme.tabIconDefault}
             />
             <View style={styles.modalButtons}>
-              <Pressable style={styles.cancelButton} onPress={resetPinModal}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Pressable style={[styles.cancelButton, { backgroundColor: theme.backgroundDefault }]} onPress={resetPinModal}>
+                <Text style={[styles.cancelButtonText, { color: theme.tabIconDefault }]}>Cancel</Text>
               </Pressable>
               <Pressable 
-                style={[styles.submitButton, !currentPinInput && styles.submitButtonDisabled]} 
+                style={[styles.submitButton, { backgroundColor: theme.link }, !currentPinInput && styles.submitButtonDisabled]} 
                 onPress={handlePinSubmit}
                 disabled={!currentPinInput}
               >
-                <Text style={styles.submitButtonText}>Next</Text>
+                <Text style={[styles.submitButtonText, { color: theme.buttonText }]}>Next</Text>
               </Pressable>
             </View>
           </View>
@@ -246,38 +261,74 @@ export default function SettingsScreen({ navigation }: any) {
       {/* Icon Selector Modal */}
       <Modal visible={showIconModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select App Icon</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundSecondary }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Select App Icon</Text>
             <View style={styles.iconGrid}>
               {AVAILABLE_ICONS.map((icon) => (
                 <Pressable 
                   key={icon.id} 
                   style={[
                     styles.iconOption, 
-                    selectedIcon === icon.id && styles.iconOptionSelected
+                    { backgroundColor: theme.backgroundDefault },
+                    selectedIcon === icon.id && [styles.iconOptionSelected, { borderColor: theme.link, backgroundColor: theme.link + '20' }]
                   ]}
                   onPress={() => handleIconSelect(icon.id)}
                 >
                   <Feather 
                     name={icon.icon as any} 
                     size={32} 
-                    color={selectedIcon === icon.id ? ChatColors.readReceiptBlue : ChatColors.textSecondary}
+                    color={selectedIcon === icon.id ? theme.link : theme.tabIconDefault}
                   />
                   <Text style={[
                     styles.iconLabel, 
-                    selectedIcon === icon.id && styles.iconLabelSelected
+                    { color: theme.tabIconDefault },
+                    selectedIcon === icon.id && [styles.iconLabelSelected, { color: theme.link }]
                   ]}>
                     {icon.name}
                   </Text>
                 </Pressable>
               ))}
             </View>
-            <Pressable style={styles.closeButton} onPress={() => setShowIconModal(false)}>
-              <Text style={styles.closeButtonText}>Close</Text>
+            <Pressable style={[styles.closeButton, { backgroundColor: theme.link }]} onPress={() => setShowIconModal(false)}>
+              <Text style={[styles.closeButtonText, { color: theme.buttonText }]}>Close</Text>
             </Pressable>
           </View>
         </View>
       </Modal>
+
+      {/* Theme Selector Modal */}
+      <Modal visible={showThemeModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundSecondary }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Select Theme</Text>
+            <View style={styles.themeGrid}>
+              {AVAILABLE_THEMES.map((availableTheme) => (
+                <Pressable 
+                  key={availableTheme.id} 
+                  style={[
+                    styles.themeOption, 
+                    { backgroundColor: theme.backgroundDefault },
+                    themeName === availableTheme.id && [styles.themeOptionSelected, { borderColor: theme.link, backgroundColor: theme.link + '20' }]
+                  ]}
+                  onPress={() => handleThemeSelect(availableTheme.id as keyof typeof Colors)}
+                >
+                  <Text style={[
+                    styles.themeLabel, 
+                    { color: theme.tabIconDefault },
+                    themeName === availableTheme.id && [styles.themeLabelSelected, { color: theme.link }]
+                  ]}>
+                    {availableTheme.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Pressable style={[styles.closeButton, { backgroundColor: theme.link }]} onPress={() => setShowThemeModal(false)}>
+              <Text style={[styles.closeButtonText, { color: theme.buttonText }]}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -285,7 +336,6 @@ export default function SettingsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: ChatColors.surface
   },
   header: {
     flexDirection: 'row',
@@ -293,7 +343,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: Spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: ChatColors.textSecondary + '20',
   },
   backButton: { 
     width: 40, 
@@ -304,7 +353,6 @@ const styles = StyleSheet.create({
   headerTitle: { 
     fontSize: 18, 
     fontWeight: '700',
-    color: ChatColors.textOnBubbles
   },
   content: { 
     flex: 1, 
@@ -316,7 +364,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: ChatColors.textSecondary,
     marginBottom: Spacing.md,
     letterSpacing: 0.5,
   },
@@ -326,7 +373,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.lg,
     paddingHorizontal: Spacing.lg,
-    backgroundColor: ChatColors.receiverBubble,
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.md,
   },
@@ -341,21 +387,17 @@ const styles = StyleSheet.create({
   settingLabel: { 
     fontSize: 16, 
     fontWeight: '600',
-    color: ChatColors.textOnBubbles,
     marginBottom: Spacing.xs,
   },
   settingValue: { 
     fontSize: 13, 
-    color: ChatColors.textSecondary,
     marginTop: Spacing.xs,
   },
   settingValueSmall: {
     fontSize: 12,
-    color: ChatColors.textSecondary,
     marginTop: Spacing.xs,
   },
   badge: {
-    backgroundColor: ChatColors.readReceiptBlue + '20',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.xs,
@@ -363,7 +405,6 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: ChatColors.readReceiptBlue,
   },
   modalOverlay: {
     flex: 1,
@@ -372,7 +413,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: ChatColors.surface,
     borderRadius: BorderRadius.lg,
     padding: Spacing.xl,
     width: '85%',
@@ -381,18 +421,15 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: ChatColors.textOnBubbles,
     marginBottom: Spacing.xl,
     textAlign: 'center',
   },
   pinInput: {
-    backgroundColor: ChatColors.receiverBubble,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
     fontSize: 24,
     fontWeight: '700',
-    color: ChatColors.textOnBubbles,
     textAlign: 'center',
     marginBottom: Spacing.xl,
     letterSpacing: 4,
@@ -403,26 +440,22 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: ChatColors.receiverBubble,
     paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.md,
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: ChatColors.textSecondary,
     textAlign: 'center',
   },
   submitButton: {
     flex: 1,
-    backgroundColor: ChatColors.readReceiptBlue,
     paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.md,
   },
   submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: ChatColors.textOnBubbles,
     textAlign: 'center',
   },
   submitButtonDisabled: {
@@ -439,32 +472,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.md,
-    backgroundColor: ChatColors.receiverBubble,
     marginBottom: Spacing.md,
   },
   iconOptionSelected: {
-    backgroundColor: ChatColors.readReceiptBlue + '30',
     borderWidth: 2,
-    borderColor: ChatColors.readReceiptBlue,
   },
   iconLabel: {
     fontSize: 12,
-    color: ChatColors.textSecondary,
     marginTop: Spacing.sm,
     fontWeight: '600',
   },
-  iconLabelSelected: {
-    color: ChatColors.readReceiptBlue,
-  },
+  iconLabelSelected: {},
   closeButton: {
-    backgroundColor: ChatColors.readReceiptBlue,
     paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.md,
   },
   closeButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: ChatColors.textOnBubbles,
     textAlign: 'center',
   },
+  themeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    marginBottom: Spacing.xl,
+  },
+  themeOption: {
+    width: '45%',
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.md,
+  },
+  themeOptionSelected: {
+    borderWidth: 2,
+  },
+  themeLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  themeLabelSelected: {},
 });

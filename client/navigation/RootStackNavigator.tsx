@@ -7,6 +7,7 @@ import CodeDisplayScreen from "@/screens/CodeDisplayScreen";
 import CodeEntryScreen from "@/screens/CodeEntryScreen";
 import ChatScreen from "@/screens/ChatScreen";
 import SettingsScreen from "@/screens/SettingsScreen";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 export type RootStackParamList = {
   Calculator: undefined;
@@ -21,50 +22,52 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootStackNavigator() {
   return (
-    <Stack.Navigator
-      initialRouteName="Calculator"
-      screenOptions={{
-        headerShown: false,
-        animation: "fade",
-        gestureEnabled: false,
-      }}
-    >
-      <Stack.Screen name="Calculator" component={CalculatorScreen} />
-      <Stack.Screen
-        name="PairingChoice"
-        component={PairingChoiceScreen}
-        options={{
-          animation: "fade_from_bottom",
-        }}
-      />
-      <Stack.Screen
-        name="CodeDisplay"
-        component={CodeDisplayScreen}
-        options={{
-          animation: "slide_from_right",
-        }}
-      />
-      <Stack.Screen
-        name="CodeEntry"
-        component={CodeEntryScreen}
-        options={{
-          animation: "slide_from_right",
-        }}
-      />
-      <Stack.Screen
-        name="Chat"
-        component={ChatScreen}
-        options={{
+    <ThemeProvider>
+      <Stack.Navigator
+        initialRouteName="Calculator"
+        screenOptions={{
+          headerShown: false,
           animation: "fade",
+          gestureEnabled: false,
         }}
-      />
-      <Stack.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{
-          animation: "slide_from_right",
-        }}
-      />
-    </Stack.Navigator>
+      >
+        <Stack.Screen name="Calculator" component={CalculatorScreen} />
+        <Stack.Screen
+          name="PairingChoice"
+          component={PairingChoiceScreen}
+          options={{
+            animation: "fade_from_bottom",
+          }}
+        />
+        <Stack.Screen
+          name="CodeDisplay"
+          component={CodeDisplayScreen}
+          options={{
+            animation: "slide_from_right",
+          }}
+        />
+        <Stack.Screen
+          name="CodeEntry"
+          component={CodeEntryScreen}
+          options={{
+            animation: "slide_from_right",
+          }}
+        />
+        <Stack.Screen
+          name="Chat"
+          component={ChatScreen}
+          options={{
+            animation: "fade",
+          }}
+        />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{
+            animation: "slide_from_right",
+          }}
+        />
+      </Stack.Navigator>
+    </ThemeProvider>
   );
 }

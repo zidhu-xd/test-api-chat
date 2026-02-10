@@ -1,13 +1,31 @@
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/useColorScheme";
+import { useEffect, useState } from 'react';
+import { Appearance } from 'react-native';
+import { getTheme } from '@/lib/storage';
+import { Colors } from '@/constants/theme';
 
-export function useTheme() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const theme = Colors[colorScheme ?? "light"];
+export const useTheme = () => {
+  const [theme, setTheme] = useState(Colors.dark);
+  const [themeName, setThemeName] = useState('dark');
 
-  return {
-    theme,
-    isDark,
-  };
-}
+  useEffect(() => {
+    const loadTheme = async () => {
+      let storedTheme = await getTheme();
+      if (storedTheme === 'system') {
+        const colorScheme = Appearance.getColorScheme();
+        storedTheme = colorScheme === 'dark' ? 'dark' : 'light';
+      }
+      setTheme(Colors[storedTheme as keyof typeof Colors] || Colors.dark);
+      setThemeName(storedTheme);
+    };
+
+    loadTheme();
+
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      loadTheme();
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  return { theme, themeName };
+};

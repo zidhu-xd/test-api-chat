@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useContext } from "react";
 import {
   View,
   StyleSheet,
@@ -9,6 +9,7 @@ import {
   Platform,
   AppState,
   AppStateStatus,
+  Image
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -27,8 +28,9 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import * as ScreenCapture from "expo-screen-capture";
+import * as ImagePicker from 'expo-image-picker';
 
-import { Spacing, BorderRadius, ChatColors } from "@/constants/theme";
+import { Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getPairingData, PairingData } from "@/lib/storage";
 import {
@@ -39,15 +41,24 @@ import {
   clearChat,
   Message,
 } from "@/lib/api";
+import { ThemeContext } from "@/context/ThemeContext";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 const POLL_INTERVAL = 1000;
 
+interface MessageBubbleProps {
+    message: Message;
+    isSender: boolean;
+    isLastSenderMessage: boolean;
+}
+
 // Typing indicator component with animated dots
 function TypingIndicator() {
+  const { theme } = useContext(ThemeContext);
   const dot1 = useSharedValue(0);
   const dot2 = useSharedValue(0);
   const dot3 = useSharedValue(0);
@@ -99,34 +110,19 @@ function TypingIndicator() {
 
   return (
     <View style={styles.typingContainer}>
-      <View style={styles.typingBubble}>
-        <Animated.View style={[styles.typingDot, dot1Style]} />
-        <Animated.View style={[styles.typingDot, dot2Style]} />
-        <Animated.View style={[styles.typingDot, dot3Style]} />
+      <View style={[styles.typingBubble, { backgroundColor: theme.chat.receiverBubble }]}>
+        <Animated.View style={[styles.typingDot, dot1Style, { backgroundColor: theme.chat.textOnBubbles }]} />
+        <Animated.View style={[styles.typingDot, dot2Style, { backgroundColor: theme.chat.textOnBubbles }]} />
+        <Animated.View style={[styles.typingDot, dot3Style, { backgroundColor: theme.chat.textOnBubbles }]} />
       </View>
     </View>
   );
 }
 
-import * as ImagePicker from 'expo-image-picker';
-
-// Inside ChatScreen component
-const handlePickImage = async () => {
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: true,
-    quality: 1,
-  });
-
-  if (!result.canceled && result.assets[0].uri && pairingData) {
-    // Logic to upload image via existing backend would go here
-    // For now, we simulate sending the URI if the backend supports it
-    await sendMessage(pairingData.pairId, pairingData.deviceId, `[IMAGE]:${result.assets[0].uri}`);
-  }
-};
 
 // In MessageBubble component (modify to display images)
 function MessageBubble({ message, isSender, isLastSenderMessage }: MessageBubbleProps) {
+  const { theme } = useContext(ThemeContext);
   const isImage = message.content.startsWith('[IMAGE]:');
   const content = isImage ? message.content.replace('[IMAGE]:', '') : message.content;
   const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -142,30 +138,36 @@ function MessageBubble({ message, isSender, isLastSenderMessage }: MessageBubble
       <View
         style={[
           styles.messageBubble,
-          isSender ? styles.senderBubble : styles.receiverBubble,
+          isSender ? [styles.senderBubble, { backgroundColor: theme.chat.senderBubble }] : [styles.receiverBubble, { backgroundColor: theme.chat.receiverBubble }],
         ]}
       >
         {isImage ? (
-          <Animated.Image source={{ uri: content }} style={{ width: 200, height: 200, borderRadius: 8 }} />
+          <AnimatedImage source={{ uri: content }} style={{ width: 200, height: 200, borderRadius: 8 }} />
         ) : (
-          <Text style={styles.messageText}>{content}</Text>
+          <Text style={[styles.messageText, { color: theme.chat.textOnBubbles }]}>{content}</Text>
         )}
-        <Text style={styles.timestampText}>{time}</Text>
+        <Text style={[styles.timestampText, { color: theme.chat.textOnBubbles + 'aa'}]}>{time}</Text>
       </View>
-      {/* ... tick logic ... */}
+      {isSender && isLastSenderMessage && (
+        <View style={styles.tickContainer}>
+            <Feather name="check" size={12} color={message.read ? theme.chat.readReceiptBlue : theme.chat.tickGray} />
+            <Feather name="check" size={12} color={message.read ? theme.chat.readReceiptBlue : theme.chat.tickGray} style={styles.secondTick} />
+        </View>
+      )}
     </Animated.View>
   );
 }
 
 // Empty state component
 function EmptyState() {
+    const { theme } = useContext(ThemeContext);
   return (
     <View style={styles.emptyStateContainer}>
-      <View style={styles.emptyStateIconContainer}>
-        <Feather name="lock" size={48} color="#C7C7CC" />
+      <View style={[styles.emptyStateIconContainer, { backgroundColor: theme.backgroundSecondary}]}>
+        <Feather name="lock" size={48} color={theme.tabIconDefault} />
       </View>
-      <Text style={styles.emptyStateTitle}>Calc-XD</Text>
-      <Text style={styles.emptyStateSubtitle}>
+      <Text style={[styles.emptyStateTitle, { color: theme.tabIconDefault }]}>Calc-XD</Text>
+      <Text style={[styles.emptyStateSubtitle, { color: theme.tabIconDefault }]}>
         Welcome to Calc-XD.{"\n"}Start typing to send a message.
       </Text>
     </View>
@@ -175,6 +177,7 @@ function EmptyState() {
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
+  const { theme } = useContext(ThemeContext);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -192,6 +195,22 @@ export default function ChatScreen() {
   const sendButtonAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: sendButtonScale.value }],
   }));
+
+  // Inside ChatScreen component
+  const handlePickImage = async () => {
+    if (!pairingData) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+    });
+
+    if (!result.canceled && result.assets[0].uri) {
+        // Logic to upload image via existing backend would go here
+        // For now, we simulate sending the URI if the backend supports it
+        await sendMessage(pairingData.pairId, pairingData.deviceId, `[IMAGE]:${result.assets[0].uri}`);
+    }
+  };
 
   // Prevent screenshots
   useEffect(() => {
@@ -400,21 +419,22 @@ export default function ChatScreen() {
         styles.container,
         {
           paddingTop: insets.top,
+          backgroundColor: theme.backgroundDefault
         },
       ]}
     >
       {/* Custom Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.backgroundSecondary, borderBottomColor: theme.backgroundTertiary }]}>
         <Pressable
           onPress={handleExit}
           style={styles.headerButton}
           hitSlop={16}
           testID="exit-button"
         >
-          <Feather name="x" size={24} color="#000000" />
+          <Feather name="x" size={24} color={theme.text} />
         </Pressable>
 
-        <Text style={styles.headerTitle}>Secure Chat</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Secure Chat</Text>
 
         <View style={styles.headerRight}>
           <Pressable
@@ -422,14 +442,14 @@ export default function ChatScreen() {
             style={styles.headerButton}
             hitSlop={16}
           >
-            <Feather name="more-vertical" size={24} color="#000000" />
+            <Feather name="more-vertical" size={24} color={theme.text} />
           </Pressable>
         </View>
       </View>
 
       {/* Menu Dropdown */}
       {showMenu ? (
-        <Animated.View style={styles.menuDropdown} entering={FadeIn.duration(150)}>
+        <Animated.View style={[styles.menuDropdown, { backgroundColor: theme.backgroundSecondary }]} entering={FadeIn.duration(150)}>
           <Pressable
             style={styles.menuItem}
             onPress={() => {
@@ -437,12 +457,12 @@ export default function ChatScreen() {
               navigation.navigate('Settings');
             }}
           >
-            <Feather name="settings" size={18} color="#000" />
-            <Text style={[styles.menuItemText, { color: '#000' }]}>Settings</Text>
+            <Feather name="settings" size={18} color={theme.text} />
+            <Text style={[styles.menuItemText, { color: theme.text }]}>Settings</Text>
           </Pressable>
           <Pressable style={styles.menuItem} onPress={handleClearChat}>
-            <Feather name="trash-2" size={18} color={ChatColors.errorRed} />
-            <Text style={styles.menuItemText}>Clear Chat</Text>
+            <Feather name="trash-2" size={18} color={theme.danger} />
+            <Text style={[styles.menuItemText, { color: theme.danger }]}>Clear Chat</Text>
           </Pressable>
         </Animated.View>
       ) : null}
@@ -485,18 +505,22 @@ export default function ChatScreen() {
         <View
           style={[
             styles.inputBar,
-            { paddingBottom: Math.max(insets.bottom, Spacing.md) },
+            { 
+                paddingBottom: Math.max(insets.bottom, Spacing.md),
+                backgroundColor: theme.backgroundSecondary, 
+                borderTopColor: theme.backgroundTertiary 
+            },
           ]}
         >
           <Pressable onPress={handlePickImage} style={styles.attachButton}>
-            <Feather name="plus" size={24} color={ChatColors.senderBubble} />
+            <Feather name="plus" size={24} color={theme.link} />
           </Pressable>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
             value={inputText}
             onChangeText={handleTextChange}
             placeholder="Message"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={theme.tabIconDefault}
             multiline
             maxLength={1000}
             testID="message-input"
@@ -513,12 +537,13 @@ export default function ChatScreen() {
             disabled={!hasInput}
             style={[
               styles.sendButton,
+              { backgroundColor: theme.link },
               sendButtonAnimatedStyle,
               !hasInput && styles.sendButtonDisabled,
             ]}
             testID="send-button"
           >
-            <Feather name="send" size={20} color="#FFFFFF" />
+            <Feather name="send" size={20} color={theme.buttonText} />
           </AnimatedPressable>
         </View>
       </KeyboardAvoidingView>
@@ -529,7 +554,6 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F8F8",
   },
   header: {
     flexDirection: "row",
@@ -537,9 +561,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    backgroundColor: "#FFFFFF",
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E0E0E0",
   },
   headerButton: {
     width: 40,
@@ -550,7 +572,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#000000",
   },
   headerRight: {
     flexDirection: "row",
@@ -560,7 +581,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 100,
     right: Spacing.lg,
-    backgroundColor: "#FFFFFF",
     borderRadius: BorderRadius.sm,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -578,7 +598,6 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: ChatColors.errorRed,
   },
   keyboardAvoid: {
     flex: 1,
@@ -610,21 +629,17 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
   },
   senderBubble: {
-    backgroundColor: ChatColors.senderBubble,
     borderBottomRightRadius: Spacing.xs,
   },
   receiverBubble: {
-    backgroundColor: ChatColors.receiverBubble,
     borderBottomLeftRadius: Spacing.xs,
   },
   messageText: {
     fontSize: 16,
-    color: ChatColors.textOnBubbles,
     lineHeight: 22,
   },
   timestampText: {
     fontSize: 10,
-    color: "rgba(255, 255, 255, 0.7)",
     alignSelf: "flex-end",
     marginTop: 2,
   },
@@ -642,7 +657,6 @@ const styles = StyleSheet.create({
   },
   typingBubble: {
     flexDirection: "row",
-    backgroundColor: ChatColors.receiverBubble,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
@@ -653,7 +667,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#FFFFFF",
     opacity: 0.7,
   },
   emptyStateContainer: {
@@ -665,7 +678,6 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "rgba(199, 199, 204, 0.2)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: Spacing.xl,
@@ -673,12 +685,10 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#8E8E93",
     marginBottom: Spacing.sm,
   },
   emptyStateSubtitle: {
     fontSize: 15,
-    color: "#C7C7CC",
     textAlign: "center",
     lineHeight: 22,
   },
@@ -687,21 +697,17 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-    backgroundColor: "#FFFFFF",
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#E0E0E0",
     gap: Spacing.sm,
   },
   textInput: {
     flex: 1,
     minHeight: 40,
     maxHeight: 120,
-    backgroundColor: "#F5F5F5",
     borderRadius: 20,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     fontSize: 16,
-    color: "#000000",
   },
   attachButton: {
     padding: 8,
@@ -712,7 +718,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: ChatColors.senderBubble,
     justifyContent: "center",
     alignItems: "center",
   },

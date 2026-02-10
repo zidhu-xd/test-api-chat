@@ -71,6 +71,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
+    "glob": "^10.3.10",
     "@types/express": "^5.0.0",
     "@types/node": "24.10.0",
     "@types/react": "~19.1.0",

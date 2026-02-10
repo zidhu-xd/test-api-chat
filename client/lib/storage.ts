@@ -13,6 +13,7 @@ const SELECTED_ICON_KEY = "selected_app_icon";
 const FCM_TOKEN_KEY = "fcm_device_token";
 const DEFAULT_PASSCODE = "1234";
 const DEFAULT_ICON = "calculator";
+const DEFAULT_THEME = "dark";
 
 export interface PairingData {
   pairId: string;
@@ -38,47 +39,16 @@ export async function setPasscode(passcode: string): Promise<void> {
 
 export async function getTheme(): Promise<string> {
   try {
-    return await AsyncStorage.getItem(THEME_KEY) || 'system';
+    const stored = await AsyncStorage.getItem(THEME_KEY);
+    return stored || DEFAULT_THEME;
   } catch {
-    return 'system';
+    return DEFAULT_THEME;
   }
 }
 
 export async function setTheme(theme: string): Promise<void> {
   try {
     await AsyncStorage.setItem(THEME_KEY, theme);
-  } catch {}
-}
-
-export async function getThemeColors(): Promise<{
-  isDark: boolean;
-  background: string;
-  primary: string;
-  accent: string;
-}> {
-  try {
-    const stored = await AsyncStorage.getItem(THEME_COLORS_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch {}
-  // Default dark theme
-  return {
-    isDark: true,
-    background: "#0B0D10",
-    primary: "#FFFFFF",
-    accent: "#4F8BFF",
-  };
-}
-
-export async function setThemeColors(colors: {
-  isDark: boolean;
-  background: string;
-  primary: string;
-  accent: string;
-}): Promise<void> {
-  try {
-    await AsyncStorage.setItem(THEME_COLORS_KEY, JSON.stringify(colors));
   } catch {}
 }
 

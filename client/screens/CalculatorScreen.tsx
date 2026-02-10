@@ -1,24 +1,17 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useContext } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   Dimensions,
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  WithSpringConfig,
-} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
-import { CalculatorColors, Spacing, BorderRadius } from "@/constants/theme";
+import { Spacing, BorderRadius } from "@/constants/theme";
 import {
   hasUnlockBeenUsed,
   markUnlockUsed,
@@ -30,6 +23,8 @@ import {
 import { resetDevice } from "@/lib/api";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { CalculatorModel } from "@/lib/CalculatorModel";
+import { CalcButton } from "@/components/Button";
+import { ThemeContext } from "@/context/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BUTTON_MARGIN = 8;
@@ -37,98 +32,12 @@ const BUTTON_SIZE = (SCREEN_WIDTH - Spacing.lg * 2 - BUTTON_MARGIN * 8) / 4;
 
 const FACTORY_RESET_CODE = "5678";
 
-const springConfig: WithSpringConfig = {
-  damping: 15,
-  mass: 0.3,
-  stiffness: 200,
-  overshootClamping: true,
-};
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-interface CalcButtonProps {
-  label: string;
-  onPress: () => void;
-  type?: "number" | "operator" | "function" | "equals";
-  wide?: boolean;
-}
-
-function CalcButton({
-  label,
-  onPress,
-  type = "number",
-  wide = false,
-}: CalcButtonProps) {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.95, springConfig);
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, springConfig);
-  };
-
-  const handlePress = () => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    onPress();
-  };
-
-  const getBackgroundColor = () => {
-    switch (type) {
-      case "operator":
-      case "equals":
-        return CalculatorColors.operatorAccent;
-      case "function":
-        return CalculatorColors.functionButton;
-      default:
-        return CalculatorColors.numberButton;
-    }
-  };
-
-  const getTextColor = () => {
-    switch (type) {
-      case "operator":
-      case "equals":
-        return "#FFFFFF";
-      default:
-        return CalculatorColors.textPrimary;
-    }
-  };
-
-  return (
-    <AnimatedPressable
-      onPress={handlePress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      style={[
-        styles.button,
-        {
-          backgroundColor: getBackgroundColor(),
-          width: wide ? BUTTON_SIZE * 2 + BUTTON_MARGIN * 2 : BUTTON_SIZE,
-        },
-        animatedStyle,
-      ]}
-      testID={`calc-button-${label}`}
-    >
-      <Text style={[styles.buttonText, { color: getTextColor() }]}>
-        {label}
-      </Text>
-    </AnimatedPressable>
-  );
-}
-
 type CalculatorNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function CalculatorScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<CalculatorNavigationProp>();
+  const { theme } = useContext(ThemeContext);
 
   // MVP Pattern: Model instance
   const modelRef = useRef(new CalculatorModel());
@@ -276,26 +185,27 @@ export default function CalculatorScreen() {
         {
           paddingTop: insets.top + Spacing.md,
           paddingBottom: insets.bottom + Spacing.md,
+          backgroundColor: theme.calculator.displayBackground,
         },
       ]}
     >
       {/* Display Area */}
       <View style={styles.displayContainer}>
         {/* Expression/Preview */}
-        <Text style={styles.previewText} numberOfLines={1}>
+        <Text style={[styles.previewText, { color: theme.calculator.textSecondary }]} numberOfLines={1}>
           {expression || " "}
         </Text>
 
         {/* Live Preview Result */}
         {preview && expression ? (
-          <Text style={styles.livePreviewText} numberOfLines={1}>
+          <Text style={[styles.livePreviewText, { color: theme.calculator.textSecondary }]} numberOfLines={1}>
             = {preview}
           </Text>
         ) : null}
 
         {/* Main Result */}
         <Text
-          style={styles.resultText}
+          style={[styles.resultText, { color: theme.calculator.textPrimary }]}
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.5}
@@ -368,7 +278,6 @@ export default function CalculatorScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: CalculatorColors.displayBackground,
   },
   displayContainer: {
     flex: 1,
@@ -378,14 +287,12 @@ const styles = StyleSheet.create({
   },
   previewText: {
     fontSize: 20,
-    color: CalculatorColors.textSecondary,
     textAlign: "right",
     marginBottom: Spacing.xs,
     fontWeight: "600",
   },
   livePreviewText: {
     fontSize: 24,
-    color: CalculatorColors.textSecondary,
     textAlign: "right",
     marginBottom: Spacing.sm,
     fontWeight: "600",
@@ -393,7 +300,6 @@ const styles = StyleSheet.create({
   resultText: {
     fontSize: 56,
     fontWeight: "700",
-    color: CalculatorColors.textPrimary,
     textAlign: "right",
   },
   buttonGrid: {

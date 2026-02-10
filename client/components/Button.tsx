@@ -1,15 +1,21 @@
 import React, { ReactNode } from "react";
-import { StyleSheet, Pressable, ViewStyle, StyleProp } from "react-native";
+import { StyleSheet, Pressable, ViewStyle, StyleProp, Text, Dimensions, Platform } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   WithSpringConfig,
 } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { BorderRadius, Spacing } from "@/constants/theme";
+import { BorderRadius, Spacing, CalculatorColors } from "@/constants/theme";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const BUTTON_MARGIN = 8;
+const BUTTON_SIZE = (SCREEN_WIDTH - Spacing.lg * 2 - BUTTON_MARGIN * 8) / 4;
+
 
 interface ButtonProps {
   onPress?: () => void;
@@ -28,65 +34,94 @@ const springConfig: WithSpringConfig = {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function Button({
-  onPress,
-  children,
-  style,
-  disabled = false,
-}: ButtonProps) {
-  const { theme } = useTheme();
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    if (!disabled) {
-      scale.value = withSpring(0.98, springConfig);
-    }
-  };
-
-  const handlePressOut = () => {
-    if (!disabled) {
+interface CalcButtonProps {
+    label: string;
+    onPress: () => void;
+    type?: "number" | "operator" | "function" | "equals";
+    wide?: boolean;
+  }
+  
+export function CalcButton({
+    label,
+    onPress,
+    type = "number",
+    wide = false,
+  }: CalcButtonProps) {
+    const scale = useSharedValue(1);
+  
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [{ scale: scale.value }],
+    }));
+  
+    const handlePressIn = () => {
+      scale.value = withSpring(0.95, springConfig);
+    };
+  
+    const handlePressOut = () => {
       scale.value = withSpring(1, springConfig);
+    };
+  
+    const handlePress = () => {
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+      onPress();
+    };
+  
+    const getBackgroundColor = () => {
+      switch (type) {
+        case "operator":
+        case "equals":
+          return CalculatorColors.operatorAccent;
+        case "function":
+          return CalculatorColors.functionButton;
+        default:
+          return CalculatorColors.numberButton;
+      }
+    };
+  
+    const getTextColor = () => {
+      switch (type) {
+        case "operator":
+        case "equals":
+          return "#FFFFFF";
+        default:
+          return CalculatorColors.textPrimary;
+      }
+    };
+
+    return (
+        <AnimatedPressable
+          onPress={handlePress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={[
+            styles.button,
+            {
+              backgroundColor: getBackgroundColor(),
+              width: wide ? BUTTON_SIZE * 2 + BUTTON_MARGIN * 2 : BUTTON_SIZE,
+            },
+            animatedStyle,
+          ]}
+          testID={`calc-button-${label}`}
+        >
+          <Text style={[styles.buttonText, { color: getTextColor() }]}>
+            {label}
+          </Text>
+        </AnimatedPressable>
+      );
     }
-  };
-
-  return (
-    <AnimatedPressable
-      onPress={disabled ? undefined : onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      disabled={disabled}
-      style={[
-        styles.button,
-        {
-          backgroundColor: theme.link,
-          opacity: disabled ? 0.5 : 1,
-        },
-        style,
-        animatedStyle,
-      ]}
-    >
-      <ThemedText
-        type="body"
-        style={[styles.buttonText, { color: theme.buttonText }]}
-      >
-        {children}
-      </ThemedText>
-    </AnimatedPressable>
-  );
-}
-
-const styles = StyleSheet.create({
-  button: {
-    height: Spacing.buttonHeight,
-    borderRadius: BorderRadius.full,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonText: {
-    fontWeight: "600",
-  },
-});
+    
+    const styles = StyleSheet.create({
+      button: {
+        height: BUTTON_SIZE,
+        borderRadius: BorderRadius.md,
+        justifyContent: "center",
+        alignItems: "center",
+        marginHorizontal: BUTTON_MARGIN / 2,
+      },
+      buttonText: {
+        fontSize: 28,
+        fontWeight: "700",
+      },
+    });
