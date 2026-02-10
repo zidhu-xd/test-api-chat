@@ -29,6 +29,7 @@ import Animated, {
 import * as Haptics from "expo-haptics";
 import * as ScreenCapture from "expo-screen-capture";
 import * as ImagePicker from 'expo-image-picker';
+import * as Notifications from "expo-notifications";
 
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -42,6 +43,7 @@ import {
   Message,
 } from "@/lib/api";
 import { ThemeContext } from "@/context/ThemeContext";
+import { initializeFirebaseNotifications, setupNotificationHandlers } from "@/lib/firebase-setup";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -190,6 +192,7 @@ export default function ChatScreen() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingSentRef = useRef<number>(0);
   const flatListRef = useRef<FlatList>(null);
+  const lastMessageCountRef = useRef<number>(0);
 
   const sendButtonScale = useSharedValue(1);
   const sendButtonAnimatedStyle = useAnimatedStyle(() => ({
@@ -224,6 +227,39 @@ export default function ChatScreen() {
       }
     };
   }, []);
+
+  // Initialize notifications
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+
+    // Set notification handler
+    const unsubscribeHandler = setupNotificationHandlers();
+
+    // Initialize FCM notifications
+    initializeFirebaseNotifications().then((success) => {
+      if (success) {
+        console.log("[v0] Notifications initialized successfully");
+      } else {
+        console.log("[v0] Failed to initialize notifications");
+      }
+    });
+
+    // Handle notification taps (when user taps notification)
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        console.log("[v0] Notification tapped, navigating to Calculator");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Calculator" }],
+        });
+      }
+    );
+
+    return () => {
+      if (unsubscribeHandler) unsubscribeHandler();
+      subscription.remove();
+    };
+  }, [navigation]);
 
   // Handle app state changes for stealth
   useEffect(() => {
@@ -273,11 +309,38 @@ export default function ChatScreen() {
       const response = await pollMessages(pairingData.pairId, pairingData.deviceId);
 
       if (response.success && response.data) {
-        setMessages(response.data.messages);
+        const newMessages = response.data.messages;
+
+        // Check for new incoming messages (from partner)
+        const incomingMessages = newMessages.filter(
+          (msg) => msg.senderId !== pairingData.deviceId
+        );
+        const previousCount = lastMessageCountRef.current;
+        const currentCount = incomingMessages.length;
+
+        // If there are new messages from partner, send notification
+        if (currentCount > previousCount && previousCount > 0 && Platform.OS !== "web") {
+          const newCount = currentCount - previousCount;
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: "New XD Calculations Available!",
+              body: "Check now",
+              sound: "default",
+              badge: newCount,
+              data: {
+                screen: "Chat",
+              },
+            },
+            trigger: null, // Send immediately
+          });
+        }
+
+        lastMessageCountRef.current = currentCount;
+        setMessages(newMessages);
         setPartnerTyping(response.data.partnerTyping);
 
         // Mark unread messages as read
-        const unreadMessages = response.data.messages.filter(
+        const unreadMessages = newMessages.filter(
           (msg) => !msg.read && msg.senderId !== pairingData.deviceId
         );
 

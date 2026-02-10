@@ -1,7 +1,5 @@
 import { getApiUrl } from "./query-client";
 
-const API_BASE = getApiUrl();
-
 interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -13,8 +11,12 @@ async function apiCall<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   try {
-    const url = new URL(endpoint, API_BASE);
-    const response = await fetch(url.toString(), {
+    const API_BASE = getApiUrl();
+    const baseUrl = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
+    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${baseUrl}${path}`;
+
+    const response = await fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
